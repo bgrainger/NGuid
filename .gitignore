@@ -1,0 +1,12 @@
+.vs/
+.idea/
+bin/
+obj/
+release/
+
+*.cache
+*.log
+*.user
+launchSettings.json
+_ReSharper*
+.DS_Store
