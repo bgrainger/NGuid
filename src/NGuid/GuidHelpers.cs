@@ -9,24 +9,14 @@ namespace NGuid;
 public static class GuidHelpers
 {
 	/// <summary>
-	/// Creates a name-based UUID using the algorithm from RFC 4122 §4.3.
-	/// </summary>
-	/// <param name="namespaceId">The ID of the namespace.</param>
-	/// <param name="name">The name (within that namespace).</param>
-	/// <returns>A UUID derived from the namespace and name.</returns>
-	public static Guid Create(Guid namespaceId, string name) =>
-		Create(namespaceId, name, 5);
-
-	/// <summary>
-	/// Creates a name-based UUID using the algorithm from RFC 4122 §4.3.
+	/// Creates a deterministic name-based UUID using the algorithm from <a href="https://datatracker.ietf.org/doc/html/rfc4122#section-4.3">RFC 4122 §4.3</a>.
 	/// </summary>
 	/// <param name="namespaceId">The ID of the namespace.</param>
 	/// <param name="name">The name (within that namespace).</param>
 	/// <param name="version">The version number of the UUID to create; this value must be either
 	/// 3 (for MD5 hashing) or 5 (for SHA-1 hashing).</param>
 	/// <returns>A UUID derived from the namespace and name.</returns>
-	/// <remarks>See <a href="http://code.logos.com/blog/2011/04/generating_a_deterministic_guid.html">Generating a deterministic GUID</a>.</remarks>
-	public static Guid Create(Guid namespaceId, string name, int version)
+	public static Guid CreateDeterministic(Guid namespaceId, string name, int version = 5)
 	{
 		// see https://github.com/LogosBible/Logos.Utility/blob/master/src/Logos.Utility/GuidUtility.cs and https://faithlife.codes/blog/2011/04/generating_a_deterministic_guid/ for the original version of this code
 #if NET6_0_OR_GREATER
@@ -36,7 +26,7 @@ public static class GuidHelpers
 			throw new ArgumentNullException(nameof(name));
 #endif
 		if (version is not (3 or 5))
-			throw new ArgumentOutOfRangeException(nameof(version), "version must be either 3 or 5.");
+			throw new ArgumentOutOfRangeException(nameof(version), version, "version must be either 3 or 5.");
 
 		// convert the name to a sequence of octets (as defined by the standard or conventions of its namespace) (step 3)
 		// ASSUME: UTF-8 encoding is always appropriate

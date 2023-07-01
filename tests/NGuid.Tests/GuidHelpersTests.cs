@@ -19,19 +19,19 @@ public class GuidHelpersTests
 	[InlineData("python.org", 3, "6fa459ea-ee8a-3ca4-894e-db77e160355e" /*, TestDisplayName = "Python implementation (http://docs.python.org/library/uuid.html#uuid-example)" */)]
 	[InlineData("python.org", 5, "886313e1-3b8a-5372-9b90-0c9aee199e5d" /*, TestDisplayName = "Python implementation (http://docs.python.org/library/uuid.html#uuid-example)" */)]
 	public void CreateDeterministicDnsGuid(string name, int version, string expected) =>
-		Assert.Equal(new Guid(expected), GuidHelpers.Create(GuidHelpers.DnsNamespace, name, version));
+		Assert.Equal(new Guid(expected), GuidHelpers.CreateDeterministic(GuidHelpers.DnsNamespace, name, version));
 
 	[Fact]
 	public void CreateNullName()
 	{
-		var ex = Assert.Throws<ArgumentNullException>(() => GuidHelpers.Create(GuidHelpers.DnsNamespace, null!));
+		var ex = Assert.Throws<ArgumentNullException>(() => GuidHelpers.CreateDeterministic(GuidHelpers.DnsNamespace, null!));
 		Assert.Equal("name", ex.ParamName);
 	}
 
 	[Fact]
 	public void CreateInvalidVersion()
 	{
-		var ex = Assert.Throws<ArgumentOutOfRangeException>(() => GuidHelpers.Create(GuidHelpers.DnsNamespace, "www.example.com", 4));
+		var ex = Assert.Throws<ArgumentOutOfRangeException>(() => GuidHelpers.CreateDeterministic(GuidHelpers.DnsNamespace, "www.example.com", 4));
 		Assert.Equal("version", ex.ParamName);
 	}
 }
