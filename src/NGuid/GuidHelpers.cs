@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -80,7 +81,7 @@ public static class GuidHelpers
 	public static readonly Guid IsoOidNamespace = new("6ba7b812-9dad-11d1-80b4-00c04fd430c8");
 
 	// Converts a GUID (expressed as a byte array) to/from network order (MSB-first).
-	internal static void SwapByteOrder(byte[] guid)
+	internal static void SwapByteOrder(Span<byte> guid)
 	{
 		SwapBytes(guid, 0, 3);
 		SwapBytes(guid, 1, 2);
@@ -88,10 +89,9 @@ public static class GuidHelpers
 		SwapBytes(guid, 6, 7);
 	}
 
-	private static void SwapBytes(byte[] guid, int left, int right)
+	private static void SwapBytes(Span<byte> guid, int left, int right)
 	{
-		var temp = guid[left];
-		guid[left] = guid[right];
-		guid[right] = temp;
+		ref var first = ref Unsafe.AsRef(guid[0]);
+		(Unsafe.Add(ref first, right), Unsafe.Add(ref first, left)) = (Unsafe.Add(ref first, left), Unsafe.Add(ref first, right));
 	}
 }
