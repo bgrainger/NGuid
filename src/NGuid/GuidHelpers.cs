@@ -10,14 +10,15 @@ namespace NGuid;
 public static class GuidHelpers
 {
 	/// <summary>
-	/// Creates a deterministic name-based UUID using the algorithm from <a href="https://datatracker.ietf.org/doc/html/rfc4122#section-4.3">RFC 4122 §4.3</a>.
+	/// Creates a name-based UUID using the algorithm from <a href="https://datatracker.ietf.org/doc/html/rfc4122#section-4.3">RFC 4122 §4.3</a>.
 	/// </summary>
 	/// <param name="namespaceId">The ID of the namespace.</param>
-	/// <param name="name">The name (within that namespace).</param>
+	/// <param name="name">The name (within that namespace). This string will be converted to UTF-8
+	/// bytes then hashed to create the UUID.</param>
 	/// <param name="version">The version number of the UUID to create; this value must be either
 	/// 3 (for MD5 hashing) or 5 (for SHA-1 hashing).</param>
 	/// <returns>A UUID derived from the namespace and name.</returns>
-	public static Guid CreateDeterministic(Guid namespaceId, string name, int version = 5)
+	public static Guid CreateFromName(Guid namespaceId, string name, int version = 5)
 	{
 #if NET6_0_OR_GREATER
 		ArgumentNullException.ThrowIfNull(name);
@@ -31,23 +32,23 @@ public static class GuidHelpers
 #if NET6_0_OR_GREATER
 		Span<byte> nameBytes = name.Length < 500 ? stackalloc byte[name.Length * 3] : new byte[name.Length * 3];
 		nameBytes = nameBytes[..Encoding.UTF8.GetBytes(name.AsSpan(), nameBytes)];
-		return CreateDeterministic(namespaceId, nameBytes, version);
+		return CreateFromName(namespaceId, nameBytes, version);
 #else
 		var nameBytes = Encoding.UTF8.GetBytes(name);
-		return CreateDeterministic(namespaceId, nameBytes, version);
+		return CreateFromName(namespaceId, nameBytes, version);
 #endif
 	}
 
 #if NET6_0_OR_GREATER
 	/// <summary>
-	/// Creates a deterministic name-based UUID using the algorithm from <a href="https://datatracker.ietf.org/doc/html/rfc4122#section-4.3">RFC 4122 §4.3</a>.
+	/// Creates a name-based UUID using the algorithm from <a href="https://datatracker.ietf.org/doc/html/rfc4122#section-4.3">RFC 4122 §4.3</a>.
 	/// </summary>
 	/// <param name="namespaceId">The ID of the namespace.</param>
 	/// <param name="name">The name (within that namespace).</param>
 	/// <param name="version">The version number of the UUID to create; this value must be either
 	/// 3 (for MD5 hashing) or 5 (for SHA-1 hashing).</param>
 	/// <returns>A UUID derived from the namespace and name.</returns>
-	public static Guid CreateDeterministic(Guid namespaceId, ReadOnlySpan<byte> name, int version = 5)
+	public static Guid CreateFromName(Guid namespaceId, ReadOnlySpan<byte> name, int version = 5)
 	{
 		// see https://github.com/LogosBible/Logos.Utility/blob/master/src/Logos.Utility/GuidUtility.cs and https://faithlife.codes/blog/2011/04/generating_a_deterministic_guid/ for the original version of this code
 		if (version is not (3 or 5))
@@ -85,7 +86,7 @@ public static class GuidHelpers
 		return new Guid(newGuid);
 	}
 #else
-	private static Guid CreateDeterministic(Guid namespaceId, byte[] name, int version = 5)
+	private static Guid CreateFromName(Guid namespaceId, byte[] name, int version = 5)
 	{
 		if (version is not (3 or 5))
 			throw new ArgumentOutOfRangeException(nameof(version), version, "version must be either 3 or 5.");
