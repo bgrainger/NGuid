@@ -34,4 +34,19 @@ public class GuidHelpersTests
 		var ex = Assert.Throws<ArgumentOutOfRangeException>(() => GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.com", 4));
 		Assert.Equal("version", ex.ParamName);
 	}
+
+	[Theory]
+	[InlineData("6ba7b810-9dad-11d1-80b4-00c04fd430c8", "1d19dad6-ba7b-6810-80b4-00c04fd430c8")] // DnsNamespace
+	[InlineData("6ba7b811-9dad-11d1-80b4-00c04fd430c8", "1d19dad6-ba7b-6811-80b4-00c04fd430c8")] // UrlNamespace
+	[InlineData("6ba7b812-9dad-11d1-80b4-00c04fd430c8", "1d19dad6-ba7b-6812-80b4-00c04fd430c8")] // IsoOidNamespace
+	public void ConvertV1ToV6(string input, string expected) =>
+		Assert.Equal(new Guid(expected), GuidHelpers.CreateV6FromV1(new Guid(input)));
+
+	[Fact]
+	public void ConvertV0ToV6() =>
+		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateV6FromV1(default(Guid)));
+
+	[Fact]
+	public void ConvertV4ToV6() =>
+		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateV6FromV1(Guid.NewGuid()));
 }

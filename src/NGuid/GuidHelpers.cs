@@ -122,6 +122,48 @@ public static class GuidHelpers
 #endif
 
 	/// <summary>
+	/// Creates a Version 6 UUID from a Version 1 UUID.
+	/// </summary>
+	/// <param name="guid">The Version 1 UUID to convert.</param>
+	/// <returns>A UUID in Version 6 format, with the timestamp in MSB order.</returns>
+	public static Guid CreateV6FromV1(Guid guid)
+	{
+#if NET6_0_OR_GREATER
+		Span<byte> guidBytes = stackalloc byte[16];
+		guid.TryWriteBytes(guidBytes);
+#else
+		var guidBytes = guid.ToByteArray();
+#endif
+
+		// check that the GUID is a version 1 GUID
+		if ((guidBytes[7] & 0xF0) != 0x10)
+			throw new ArgumentException("The GUID must be a version 1 GUID.", nameof(guid));
+
+		// turn the bytes into a 60-bit timestamp; note that the bytes retrieved from the Guid are in LSB order
+		var timestamp =
+			((ulong) (guidBytes[7] & 0x0F)) << 56 |
+			((ulong) guidBytes[6]) << 48 |
+			((ulong) guidBytes[5]) << 40 |
+			((ulong) guidBytes[4]) << 32 |
+			((ulong) guidBytes[3]) << 24 |
+			((ulong) guidBytes[2]) << 16 |
+			((ulong) guidBytes[1]) << 8 |
+			guidBytes[0];
+
+		// rearrange into MSB order (with an LSB permutation that the Guid constructor will undo) and set the version to 6
+		guidBytes[3] = (byte) (timestamp >> 52);
+		guidBytes[2] = (byte) (timestamp >> 44);
+		guidBytes[1] = (byte) (timestamp >> 36);
+		guidBytes[0] = (byte) (timestamp >> 28);
+		guidBytes[5] = (byte) (timestamp >> 20);
+		guidBytes[4] = (byte) (timestamp >> 12);
+		guidBytes[7] = (byte) (0x60 | ((timestamp >> 8) & 0x0F));
+		guidBytes[6] = (byte) timestamp;
+
+		return new Guid(guidBytes);
+	}
+
+	/// <summary>
 	/// The namespace for fully-qualified domain names (from RFC 4122, Appendix C).
 	/// </summary>
 	public static readonly Guid DnsNamespace = new("6ba7b810-9dad-11d1-80b4-00c04fd430c8");
