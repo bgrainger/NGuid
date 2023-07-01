@@ -24,7 +24,14 @@ jobs:
       run: dotnet build --configuration Release --no-restore
 
     - name: Test
-      run: dotnet test --configuration Release --no-build
+      run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
+
+    - name: Upload Test Results 
+      uses: actions/upload-artifact@v2
+      if: success() || failure()
+      with:
+        name: test-results
+        path: tests/NGuid.Tests/TestResults/test-results.trx
 
     - name: Pack
       run: dotnet pack --configuration Release --no-build

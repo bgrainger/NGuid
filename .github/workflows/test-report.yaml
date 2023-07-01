@@ -1,0 +1,23 @@
+name: 'Test Report'
+
+on:
+  workflow_run:
+    workflows: [ 'Continuous Integration' ]
+    types:
+      - completed
+
+permissions:
+  checks: write
+  statuses: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Publish Test Results
+      uses: dorny/test-reporter@v1
+      with:
+        artifact: test-results
+        name: Xunit Tests
+        path: '*.trx'
+        reporter: dotnet-trx
