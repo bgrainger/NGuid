@@ -138,7 +138,8 @@ public static class GuidHelpers
 	/// </summary>
 	/// <param name="guid">The Version 1 UUID to convert.</param>
 	/// <returns>A UUID in Version 6 format, with the timestamp in MSB order.</returns>
-	public static Guid CreateV6FromV1(Guid guid)
+	/// <remarks>This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-uuid-version-6">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
+	public static Guid CreateVersion6FromVersion1(Guid guid)
 	{
 #if NET6_0_OR_GREATER
 		Span<byte> guidBytes = stackalloc byte[16];
@@ -151,7 +152,7 @@ public static class GuidHelpers
 		if ((guidBytes[7] & 0xF0) != 0x10)
 			throw new ArgumentException("The GUID must be a version 1 GUID.", nameof(guid));
 
-		// turn the bytes into a 60-bit timestamp; note that the bytes retrieved from the Guid are in LSB order
+		// turn the bytes into a 60-bit timestamp; note that the bytes retrieved from the GUID are in LSB order
 		var timestamp =
 			((ulong) (guidBytes[7] & 0x0F)) << 56 |
 			((ulong) guidBytes[6]) << 48 |
