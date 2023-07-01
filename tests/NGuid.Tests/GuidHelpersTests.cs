@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace NGuid.Tests;
 
 public class GuidHelpersTests
@@ -18,8 +20,14 @@ public class GuidHelpersTests
 	[InlineData("www.widgets.com", 5, "21f7f8de-8051-5b89-8680-0195ef798b6a" /*, TestDisplayName = "Boost Test Suite https://github.com/boostorg/uuid/blob/2bc0c8e71677f387afdc09bc4f8d609d2c74e80e/test/test_generators.cpp#L85C25-L85C121" */)]
 	[InlineData("python.org", 3, "6fa459ea-ee8a-3ca4-894e-db77e160355e" /*, TestDisplayName = "Python implementation (http://docs.python.org/library/uuid.html#uuid-example)" */)]
 	[InlineData("python.org", 5, "886313e1-3b8a-5372-9b90-0c9aee199e5d" /*, TestDisplayName = "Python implementation (http://docs.python.org/library/uuid.html#uuid-example)" */)]
-	public void CreateDeterministicDnsGuid(string name, int version, string expected) =>
+	public void CreateGuidFromDnsName(string name, int version, string expected) =>
 		Assert.Equal(new Guid(expected), GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, name, version));
+
+	[Theory]
+	[InlineData("www.terraform.io", 5, "a5008fae-b28c-5ba5-96cd-82b4c53552d6")] // https://developer.hashicorp.com/terraform/language/functions/uuidv5
+	[InlineData("www.example.org", 5, "74738ff5-5367-5958-9aee-98fffdcd1876")] // https://stackoverflow.com/a/5541986/23633
+	public void CreateGuidFromAsciiDnsName(string name, int version, string expected) =>
+		Assert.Equal(new Guid(expected), GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, Encoding.ASCII.GetBytes(name), version));
 
 	[Fact]
 	public void CreateNullName()
