@@ -24,7 +24,7 @@ public class GuidHelpersTests
 	[Fact]
 	public void CreateNullName()
 	{
-		var ex = Assert.Throws<ArgumentNullException>(() => GuidHelpers.CreateDeterministic(GuidHelpers.DnsNamespace, null!));
+		var ex = Assert.Throws<ArgumentNullException>(() => GuidHelpers.CreateDeterministic(GuidHelpers.DnsNamespace, default(string)!));
 		Assert.Equal("name", ex.ParamName);
 	}
 
