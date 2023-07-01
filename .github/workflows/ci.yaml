@@ -27,7 +27,7 @@ jobs:
       run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
 
     - name: Upload Test Results 
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       if: success() || failure()
       with:
         name: test-results
@@ -35,3 +35,10 @@ jobs:
 
     - name: Pack
       run: dotnet pack --configuration Release --no-build
+
+    - name: Upload NuGet Package 
+      uses: actions/upload-artifact@v3
+      with:
+        name: nuget
+        path: artifacts/package/release/
+        if-no-files-found: error
