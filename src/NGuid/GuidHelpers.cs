@@ -286,6 +286,79 @@ public static class GuidHelpers
 	}
 
 	/// <summary>
+	/// Creates a Version 8 UUID from 122 bits of the specified input. All byte values will be copied to the returned
+	/// <see cref="Guid"/> except for the reserved <c>version</c> and <c>variant</c> bits, which will be set to 8
+	/// and 2 respectively.
+	/// </summary>
+	/// <param name="bytes">The bytes to use to initialize the UUID.</param>
+	/// <returns>A new Version 8 UUID.</returns>
+	/// <remarks>This method treats the in MSB order; the first byte in <paramref name="bytes"/>
+	/// will be the first byte in the standard string representation of the returned <see cref="Guid"/>.
+	/// This is the opposite of how the <see cref="Guid(byte[])"/> constructor treats its argument, and
+	/// will cause <see cref="Guid.ToByteArray"/> to return a byte array whose bytes values are
+	/// "reversed" compared to the input values in <paramref name="bytes"/>.
+	/// This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-uuid-version-8">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
+	public static Guid CreateVersion8(byte[] bytes)
+	{
+#if NET6_0_OR_GREATER
+		ArgumentNullException.ThrowIfNull(bytes);
+		return CreateVersion8(bytes.AsSpan());
+#else
+		if (bytes is null)
+			throw new ArgumentNullException(nameof(bytes));
+		if (bytes.Length < 16)
+			throw new ArgumentException("At least sixteen bytes must be provided", nameof(bytes));
+
+		// make a copy of the bytes
+		var guidBytes = new byte[16];
+		bytes.AsSpan(0, 16).CopyTo(guidBytes);
+
+		// convert the bytes to network order (so that bytes[0] is the first byte in the serialized GUID output)
+		SwapByteOrder(guidBytes);
+
+		// set the version and variant fields
+		guidBytes[7] = (byte) (0x80 | (guidBytes[7] & 0xF));
+		guidBytes[8] = (byte) (0x80 | (guidBytes[8] & 0x3F));
+
+		return new Guid(guidBytes);
+#endif
+	}
+
+#if NET6_0_OR_GREATER
+	/// <summary>
+	/// Creates a Version 8 UUID from 122 bits of the specified input. All byte values will be copied to the returned
+	/// <see cref="Guid"/> except for the reserved <c>version</c> and <c>variant</c> bits, which will be set to 8
+	/// and 2 respectively.
+	/// </summary>
+	/// <param name="bytes">The bytes to use to initialize the UUID.</param>
+	/// <returns>A new Version 8 UUID.</returns>
+	/// <remarks>This method treats the in MSB order; the first byte in <paramref name="bytes"/>
+	/// will be the first byte in the standard string representation of the returned <see cref="Guid"/>.
+	/// This is the opposite of how the <see cref="Guid(byte[])"/> constructor treats its argument, and
+	/// will cause <see cref="Guid.ToByteArray"/> to return a byte array whose bytes values are
+	/// "reversed" compared to the input values in <paramref name="bytes"/>.
+	/// This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-uuid-version-8">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
+	public static Guid CreateVersion8(ReadOnlySpan<byte> bytes)
+	{
+		if (bytes.Length < 16)
+			throw new ArgumentException("At least sixteen bytes must be provided", nameof(bytes));
+
+		// make a copy of the bytes
+		Span<byte> guidBytes = stackalloc byte[16];
+		bytes[..16].CopyTo(guidBytes);
+
+		// convert the bytes to network order (so that bytes[0] is the first byte in the serialized GUID output)
+		SwapByteOrder(guidBytes);
+
+		// set the version and variant fields
+		guidBytes[7] = (byte) (0x80 | (guidBytes[7] & 0xF));
+		guidBytes[8] = (byte) (0x80 | (guidBytes[8] & 0x3F));
+
+		return new Guid(guidBytes);
+	}
+#endif
+
+	/// <summary>
 	/// The namespace for fully-qualified domain names (from RFC 4122, Appendix C).
 	/// </summary>
 	public static readonly Guid DnsNamespace = new("6ba7b810-9dad-11d1-80b4-00c04fd430c8");

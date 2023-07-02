@@ -122,6 +122,58 @@ public class GuidHelpersTests
 	public void ConvertV4ToV6() =>
 		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion6FromVersion1(Guid.NewGuid()));
 
+	[Theory]
+	[InlineData("00112233445566778899AABBCCDDEEFF", "00112233-4455-8677-8899-aabbccddeeff")]
+	[InlineData("112233445566778899AABBCCDDEEFF00", "11223344-5566-8788-99aa-bbccddeeff00")]
+	[InlineData("00000000000000000000000000000000", "00000000-0000-8000-8000-000000000000")]
+	[InlineData("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", "ffffffff-ffff-8fff-bfff-ffffffffffff")]
+	public void CreateV8(string input, string expected)
+	{
+#if NET8_0_OR_GREATER
+		var bytes = Convert.FromHexString(input);
+#else
+		var bytes = new byte[input.Length / 2];
+		for (var i = 0; i < bytes.Length; i++)
+			bytes[i] = byte.Parse(input.Substring(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+#endif
+		var guid = GuidHelpers.CreateVersion8(bytes);
+		Assert.Equal(new Guid(expected), guid);
+	}
+
+	[Fact]
+	public void CreateV8FromNull() =>
+		Assert.Throws<ArgumentNullException>(() => GuidHelpers.CreateVersion8(default(byte[])!));
+
+	[Fact]
+	public void CreateV8FromZeroBytes() =>
+		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion8(Array.Empty<byte>()));
+
+	// https://github.com/dotnet/roslyn-analyzers/issues/6686
+	private static readonly byte[] s_bytes15 = new byte[15];
+	private static readonly byte[] s_bytes32 = new byte[32];
+
+	[Fact]
+	public void CreateV8FromFifteenBytes() =>
+		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion8(s_bytes15));
+
+	[Fact]
+	public void CreateV8FromNewArray() =>
+		Assert.Equal(new Guid("00000000-0000-8000-8000-000000000000"), GuidHelpers.CreateVersion8(s_bytes32));
+
+#if NET8_0_OR_GREATER
+	[Fact]
+	public void CreateV8FromEmptySpan() =>
+		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion8(stackalloc byte[0]));
+
+	[Fact]
+	public void CreateV8FromShortSpan() =>
+		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion8(stackalloc byte[15]));
+
+	[Fact]
+	public void CreateV8FromNewSpan() =>
+		Assert.Equal(new Guid("00000000-0000-8000-8000-000000000000"), GuidHelpers.CreateVersion8(stackalloc byte[32]));
+#endif
+
 #if NET8_0_OR_GREATER
 	private sealed class FixedTimeProvider : TimeProvider
 	{
