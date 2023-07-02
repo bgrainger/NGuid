@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
-    <Description>Creates GUIDs according to RFC4122.</Description>
+    <Description>Creates GUIDs according to RFC 4122.</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>guid;uuid;rfc4122</PackageTags>
     <PackageIcon>NGuid.png</PackageIcon>

@@ -1,6 +1,7 @@
 # NGuid
 
 [![Continuous Integration](https://github.com/bgrainger/NGuid/actions/workflows/ci.yaml/badge.svg)](https://github.com/bgrainger/NGuid/actions/workflows/ci.yaml)
+![NuGet](https://img.shields.io/nuget/v/NGuid)
 
 ## About
 
