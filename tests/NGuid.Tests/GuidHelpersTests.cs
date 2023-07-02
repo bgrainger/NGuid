@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Text;
 
 namespace NGuid.Tests;
@@ -51,10 +52,58 @@ public class GuidHelpersTests
 		Assert.Equal(new Guid(expected), GuidHelpers.CreateVersion6FromVersion1(new Guid(input)));
 
 	[Fact]
+	public void CreateV6()
+	{
+		var start = DateTime.UtcNow;
+		var bytes = GuidHelpers.CreateVersion6().ToByteArray();
+		var end = DateTime.UtcNow;
+
+		// extract the timestamp from the first eight bytes
+		var timeHigh = BinaryPrimitives.ReadUInt32LittleEndian(bytes);
+		var timeMid = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(4));
+		var timeLow = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(6)) & 0xFFFu;
+		var timestamp = (long) ((((ulong) timeHigh) << 28) | ((ulong) timeMid << 12) | timeLow);
+
+		// adjust epoch to Windows NT FILETIME (from get_system_time in https://datatracker.ietf.org/doc/html/rfc4122)
+		timestamp -=
+			(1000 * 1000 * 10L) // seconds
+		   * (60 * 60 * 24L) // days
+		   * (17 + 30 + 31 + 365 * 18 + 5L); // # of days
+
+		var extractedDateTime = DateTime.FromFileTimeUtc(timestamp);
+		Assert.InRange(extractedDateTime, start, end);
+	}
+
+#if NET8_0_OR_GREATER
+	[Fact]
+	public void CreateV6FromTimeProvider()
+	{
+		// use the timestamp from the RFC 4122 example; see the date on this draft: https://datatracker.ietf.org/doc/html/draft-leach-uuids-guids-01
+		var timeProvider = new FixedTimeProvider(new DateTimeOffset(1998, 2, 4, 22, 13, 53, 151, 183, default));
+		var guid = GuidHelpers.CreateVersion6(timeProvider);
+		Assert.Equal("1d19dad6-ba7b-6816", guid.ToString("d")[..18]);
+	}
+#endif
+
+	[Fact]
 	public void ConvertV0ToV6() =>
 		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion6FromVersion1(default(Guid)));
 
 	[Fact]
 	public void ConvertV4ToV6() =>
 		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion6FromVersion1(Guid.NewGuid()));
+
+#if NET8_0_OR_GREATER
+	private sealed class FixedTimeProvider : TimeProvider
+	{
+		public FixedTimeProvider(DateTimeOffset utcNow)
+		{
+			m_utcNow = utcNow;
+		}
+
+		public override DateTimeOffset GetUtcNow() => m_utcNow;
+
+		private readonly DateTimeOffset m_utcNow;
+	}
+#endif
 }

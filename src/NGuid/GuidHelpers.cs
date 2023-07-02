@@ -134,6 +134,60 @@ public static class GuidHelpers
 #endif
 
 	/// <summary>
+	/// Creates a new Version 6 UUID based on the current time and a random node ID.
+	/// </summary>
+	/// <returns>A new Version 6 UUID based on the current time and a random node ID.</returns>
+	/// <remarks>This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-uuid-version-6">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
+	public static Guid CreateVersion6() =>
+		CreateVersion6(DateTimeOffset.UtcNow);
+
+#if NET8_0_OR_GREATER
+	/// <summary>
+	/// Creates a new Version 6 UUID based on the timestamp returned from <paramref name="timeProvider"/> and a random node ID.
+	/// </summary>
+	/// <param name="timeProvider">A <see cref="TimeProvider"/> that can provide the current UTC time.</param>
+	/// <returns>A new Version 6 UUID based on the specified time and a random node ID.</returns>
+	/// <remarks>This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-uuid-version-6">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
+	public static Guid CreateVersion6(TimeProvider timeProvider)
+	{
+		ArgumentNullException.ThrowIfNull(timeProvider);
+		return CreateVersion6(timeProvider.GetUtcNow());
+	}
+#endif
+
+	/// <summary>
+	/// Creates a new Version 6 UUID from the specified timestamp.
+	/// </summary>
+	/// <param name="timestamp">The timestamp to be used to fill the <c>time_high</c>, <c>time_mid</c>, and <c>time_low</c> fields of the UUID.</param>
+	/// <returns>A new time-based Version 6 UUID.</returns>
+	/// <remarks>This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-uuid-version-6">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
+	private static Guid CreateVersion6(DateTimeOffset timestamp)
+	{
+		var ticks = (timestamp.UtcDateTime - s_gregorianEpoch).Ticks;
+		if (ticks < 0)
+			throw new ArgumentOutOfRangeException(nameof(timestamp), timestamp, "The timestamp must be after 15 October 1582.");
+
+		// use the timestamp as the first three fields in the UUID
+		var timeHigh = (uint) (ticks >> 28);
+		var timeMid = (ushort) (ticks >> 12);
+		var timeLow = (ushort) ((ticks & 0xFFF) | 0x6000u);
+
+		// "The clock sequence and node bits SHOULD be reset to a pseudo-random value for each new UUIDv6 generated"
+#if NET6_0_OR_GREATER
+		Span<byte> bytes = stackalloc byte[8];
+		RandomNumberGenerator.Fill(bytes);
+#else
+		var bytes = new byte[8];
+		using var rng = RandomNumberGenerator.Create();
+		rng.GetBytes(bytes);
+#endif
+
+		return new Guid(timeHigh, timeMid, timeLow,
+			(byte) (bytes[0] & 0x3F | 0x80), bytes[1], bytes[2], bytes[3],
+			bytes[4], bytes[5], bytes[6], bytes[7]);
+	}
+
+	/// <summary>
 	/// Creates a Version 6 UUID from a Version 1 UUID.
 	/// </summary>
 	/// <param name="guid">The Version 1 UUID to convert.</param>
@@ -205,4 +259,7 @@ public static class GuidHelpers
 		ref var first = ref Unsafe.AsRef(guid[0]);
 		(Unsafe.Add(ref first, right), Unsafe.Add(ref first, left)) = (Unsafe.Add(ref first, left), Unsafe.Add(ref first, right));
 	}
+
+	// UUID v1 and v6 uses a count of 100-nanosecond intervals since 00:00:00.00 UTC, 15 October 1582
+	private static readonly DateTime s_gregorianEpoch = new DateTime(1582, 10, 15, 0, 0, 0, DateTimeKind.Utc);
 }
