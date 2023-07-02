@@ -27,6 +27,8 @@ public class GuidHelpersTests
 	[Theory]
 	[InlineData("www.terraform.io", 5, "a5008fae-b28c-5ba5-96cd-82b4c53552d6")] // https://developer.hashicorp.com/terraform/language/functions/uuidv5
 	[InlineData("www.example.org", 5, "74738ff5-5367-5958-9aee-98fffdcd1876")] // https://stackoverflow.com/a/5541986/23633
+	[InlineData("www.example.com", 3, "5df41881-3aed-3515-88a7-2f4a814cf09e")] // https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-example-of-a-uuidv3-value
+	[InlineData("www.example.com", 5, "2ed6657d-e927-568b-95e1-2665a8aea6a2")] // https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-example-of-a-uuidv5-value
 	public void CreateGuidFromAsciiDnsName(string name, int version, string expected) =>
 		Assert.Equal(new Guid(expected), GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, Encoding.ASCII.GetBytes(name), version));
 
