@@ -1,7 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net6.0;net8.0</TargetFrameworks>
+    <Description>Creates GUIDs according to RFC4122.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>guid;uuid;rfc4122</PackageTags>
+    <PackageIcon>NGuid.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,5 +14,10 @@
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
     <PackageReference Include="System.Memory" Version="4.5.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\"/>
+    <None Include="..\..\NGuid.png" Pack="true" PackagePath="\"/>
   </ItemGroup>
 </Project>
