@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Globalization;
 using System.Text;
 
 namespace NGuid.Tests;
@@ -77,13 +78,14 @@ public class GuidHelpersTests
 	}
 
 #if NET8_0_OR_GREATER
-	[Fact]
-	public void CreateV6FromTimeProvider()
+	[Theory]
+	[InlineData("1998-02-04T22:13:53.151183Z", "1d19dad6-ba7b-6816")] // timestamp from the RFC 4122 example; see the date on this draft: https://datatracker.ietf.org/doc/html/draft-leach-uuids-guids-01
+	[InlineData("2022-02-22T14:22:22-05:00", "1ec9414c-232a-6b00")] // https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-example-of-a-uuidv6-value
+	public void CreateV6FromTimeProvider(string timestamp, string expectedPrefix)
 	{
-		// use the timestamp from the RFC 4122 example; see the date on this draft: https://datatracker.ietf.org/doc/html/draft-leach-uuids-guids-01
-		var timeProvider = new FixedTimeProvider(new DateTimeOffset(1998, 2, 4, 22, 13, 53, 151, 183, default));
+		var timeProvider = new FixedTimeProvider(DateTimeOffset.Parse(timestamp, CultureInfo.InvariantCulture));
 		var guid = GuidHelpers.CreateVersion6(timeProvider);
-		Assert.Equal("1d19dad6-ba7b-6816", guid.ToString("d")[..18]);
+		Assert.StartsWith(expectedPrefix, guid.ToString("d"), StringComparison.Ordinal);
 	}
 #endif
 
