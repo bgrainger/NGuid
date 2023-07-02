@@ -90,6 +90,31 @@ public class GuidHelpersTests
 #endif
 
 	[Fact]
+	public void CreateV7()
+	{
+		var start = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+		var bytes = GuidHelpers.CreateVersion7().ToByteArray();
+		var end = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+		// extract the timestamp from the first eight bytes
+		var timeHigh = BinaryPrimitives.ReadUInt32LittleEndian(bytes);
+		var timeLow = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(4));
+		var extractedTime = (long) ((((ulong) timeHigh) << 16) | timeLow);
+		Assert.InRange(extractedTime, start, end);
+	}
+
+#if NET8_0_OR_GREATER
+	[Theory]
+	[InlineData("2022-02-22T14:22:22-05:00", "017f22e2-79b0-7")] // https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-example-of-a-uuidv7-value
+	public void CreateV7FromTimeProvider(string timestamp, string expectedPrefix)
+	{
+		var timeProvider = new FixedTimeProvider(DateTimeOffset.Parse(timestamp, CultureInfo.InvariantCulture));
+		var guid = GuidHelpers.CreateVersion7(timeProvider);
+		Assert.StartsWith(expectedPrefix, guid.ToString("d"), StringComparison.Ordinal);
+	}
+#endif
+
+	[Fact]
 	public void ConvertV0ToV6() =>
 		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion6FromVersion1(default(Guid)));
 

@@ -231,6 +231,61 @@ public static class GuidHelpers
 	}
 
 	/// <summary>
+	/// Creates a new Version 7 UUID based on the current time combined with random data.
+	/// </summary>
+	/// <returns>A new Version 7 UUID based on the current time and random data.</returns>
+	/// <remarks>This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-uuid-version-7">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
+	public static Guid CreateVersion7() =>
+		CreateVersion7(DateTimeOffset.UtcNow);
+
+#if NET8_0_OR_GREATER
+	/// <summary>
+	/// Creates a new Version 7 UUID based on the timestamp returned from <paramref name="timeProvider"/> combined with random data.
+	/// </summary>
+	/// <param name="timeProvider">A <see cref="TimeProvider"/> that can provide the current UTC time.</param>
+	/// <returns>A new Version 7 UUID based on the specified time and random data.</returns>
+	/// <remarks>This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-uuid-version-7">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
+	public static Guid CreateVersion7(TimeProvider timeProvider)
+	{
+		ArgumentNullException.ThrowIfNull(timeProvider);
+		return CreateVersion7(timeProvider.GetUtcNow());
+	}
+#endif
+
+	/// <summary>
+	/// Creates a new Version 7 UUID from the specified timestamp.
+	/// </summary>
+	/// <param name="timestamp">The timestamp to be used to fill the <c>unix_ts_ms</c> field of the UUID.</param>
+	/// <returns>A new time-based Version 7 UUID.</returns>
+	/// <remarks>This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-uuid-version-7">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
+	private static Guid CreateVersion7(DateTimeOffset timestamp)
+	{
+		var unixMilliseconds = timestamp.ToUnixTimeMilliseconds();
+		if (unixMilliseconds < 0)
+			throw new ArgumentOutOfRangeException(nameof(timestamp), timestamp, "The timestamp must be after 1 January 1970.");
+
+		// "UUIDv7 values are created by allocating a Unix timestamp in milliseconds in the most significant 48 bits ..."
+		var timeHigh = (uint) (unixMilliseconds >> 16);
+		var timeLow = (ushort) unixMilliseconds;
+
+		// "... and filling the remaining 74 bits, excluding the required version and variant bits, with random bits"
+#if NET6_0_OR_GREATER
+		Span<byte> bytes = stackalloc byte[10];
+		RandomNumberGenerator.Fill(bytes);
+#else
+		var bytes = new byte[10];
+		using var rng = RandomNumberGenerator.Create();
+		rng.GetBytes(bytes);
+#endif
+
+		var randA = (ushort) (0x7000u | ((bytes[0] & 0xF) << 8) | bytes[1]);
+
+		return new Guid(timeHigh, timeLow, randA,
+			(byte) (bytes[2] & 0x3F | 0x80), bytes[3], bytes[4], bytes[5],
+			bytes[6], bytes[7], bytes[8], bytes[9]);
+	}
+
+	/// <summary>
 	/// The namespace for fully-qualified domain names (from RFC 4122, Appendix C).
 	/// </summary>
 	public static readonly Guid DnsNamespace = new("6ba7b810-9dad-11d1-80b4-00c04fd430c8");
