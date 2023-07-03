@@ -19,6 +19,9 @@ public static class GuidHelpers
 	/// <param name="version">The version number of the UUID to create; this value must be either
 	/// 3 (for MD5 hashing) or 5 (for SHA-1 hashing).</param>
 	/// <returns>A UUID derived from the namespace and name.</returns>
+#if NET6_0_OR_GREATER
+	[SkipLocalsInit]
+#endif
 	public static Guid CreateFromName(Guid namespaceId, string name, int version = 5)
 	{
 #if NET6_0_OR_GREATER
@@ -95,6 +98,7 @@ public static class GuidHelpers
 	/// <param name="version">The version number of the UUID to create; this value must be either
 	/// 3 (for MD5 hashing) or 5 (for SHA-1 hashing).</param>
 	/// <returns>A UUID derived from the namespace and name.</returns>
+	[SkipLocalsInit]
 	public static Guid CreateFromName(Guid namespaceId, ReadOnlySpan<byte> name, int version = 5)
 	{
 		// see https://github.com/LogosBible/Logos.Utility/blob/master/src/Logos.Utility/GuidUtility.cs and https://faithlife.codes/blog/2011/04/generating_a_deterministic_guid/ for the original version of this code
@@ -162,6 +166,9 @@ public static class GuidHelpers
 	/// <param name="timestamp">The timestamp to be used to fill the <c>time_high</c>, <c>time_mid</c>, and <c>time_low</c> fields of the UUID.</param>
 	/// <returns>A new time-based Version 6 UUID.</returns>
 	/// <remarks>This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-uuid-version-6">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
+#if NET6_0_OR_GREATER
+	[SkipLocalsInit]
+#endif
 	private static Guid CreateVersion6(DateTimeOffset timestamp)
 	{
 		var ticks = (timestamp.UtcDateTime - s_gregorianEpoch).Ticks;
@@ -194,6 +201,9 @@ public static class GuidHelpers
 	/// <param name="guid">The Version 1 UUID to convert.</param>
 	/// <returns>A UUID in Version 6 format, with the timestamp in MSB order.</returns>
 	/// <remarks>This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-uuid-version-6">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
+#if NET6_0_OR_GREATER
+	[SkipLocalsInit]
+#endif
 	public static Guid CreateVersion6FromVersion1(Guid guid)
 	{
 #if NET6_0_OR_GREATER
@@ -259,6 +269,9 @@ public static class GuidHelpers
 	/// <param name="timestamp">The timestamp to be used to fill the <c>unix_ts_ms</c> field of the UUID.</param>
 	/// <returns>A new time-based Version 7 UUID.</returns>
 	/// <remarks>This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-uuid-version-7">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
+#if NET6_0_OR_GREATER
+	[SkipLocalsInit]
+#endif
 	private static Guid CreateVersion7(DateTimeOffset timestamp)
 	{
 		var unixMilliseconds = timestamp.ToUnixTimeMilliseconds();
@@ -339,6 +352,7 @@ public static class GuidHelpers
 	/// will cause <see cref="Guid.ToByteArray"/> to return a byte array whose bytes values are
 	/// "reversed" compared to the input values in <paramref name="bytes"/>.
 	/// This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-uuid-version-8">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
+	[SkipLocalsInit]
 	public static Guid CreateVersion8(ReadOnlySpan<byte> bytes)
 	{
 		if (bytes.Length < 16)
@@ -414,6 +428,7 @@ public static class GuidHelpers
 	/// <param name="name">The name within that namespace ID.</param>
 	/// <returns>A version 8 UUID formed by hashing the hash space ID, namespace ID, and name.</returns>
 	/// <remarks>This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-name-based-uuid-generation">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
+	[SkipLocalsInit]
 	public static Guid CreateVersion8FromName(HashAlgorithmName hashAlgorithmName, Guid namespaceId, ReadOnlySpan<byte> name)
 	{
 		var (hashSpaceId, algorithm) = GetHashSpaceAndAlgorithm(hashAlgorithmName);
