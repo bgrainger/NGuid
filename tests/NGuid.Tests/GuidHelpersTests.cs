@@ -174,6 +174,11 @@ public class GuidHelpersTests
 		Assert.Equal(new Guid("00000000-0000-8000-8000-000000000000"), GuidHelpers.CreateVersion8(stackalloc byte[32]));
 #endif
 
+	[Theory]
+	[InlineData("SHA256", "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "www.example.com", "401835fd-a627-870a-873f-ed73f2bc5b2c")] // https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-example-of-a-uuidv8-value-n
+	public void CreateV8FromName(string algorithmName, string namespaceId, string name, string expected) =>
+		Assert.Equal(new Guid(expected), GuidHelpers.CreateVersion8FromName(new(algorithmName), new(namespaceId), Encoding.ASCII.GetBytes(name)));
+
 #if NET8_0_OR_GREATER
 	private sealed class FixedTimeProvider : TimeProvider
 	{

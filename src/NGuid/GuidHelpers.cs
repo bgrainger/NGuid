@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -359,6 +360,106 @@ public static class GuidHelpers
 #endif
 
 	/// <summary>
+	/// Creates a Version 8 UUID from a name in the specified namespace using the specified hash algorithm, according to the algorithm
+	/// in <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-name-based-uuid-generation">draft-ietf-uuidrev-rfc4122bis-07, section 6.5</a>.
+	/// </summary>
+	/// <param name="hashAlgorithmName">The name of the hash algorithm to use. Supported values are <c>SHA256</c>, <c>SHA384</c>, and <c>SHA512</c>.</param>
+	/// <param name="namespaceId">The namespace ID.</param>
+	/// <param name="name">The name within that namespace ID.</param>
+	/// <returns>A version 8 UUID formed by hashing the hash space ID, namespace ID, and name.</returns>
+	/// <remarks>This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-name-based-uuid-generation">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
+	public static Guid CreateVersion8FromName(HashAlgorithmName hashAlgorithmName, Guid namespaceId, byte[] name)
+	{
+#if NET6_0_OR_GREATER
+		return CreateVersion8FromName(hashAlgorithmName, namespaceId, name.AsSpan());
+#else
+		var (hashSpaceId, algorithm) = GetHashSpaceAndAlgorithm(hashAlgorithmName);
+		using (algorithm)
+		{
+			// add the hash space bytes (in network order) to the hash
+			var hashSpaceBytes = hashSpaceId.ToByteArray();
+			SwapByteOrder(hashSpaceBytes);
+			algorithm.TransformBlock(hashSpaceBytes, 0, hashSpaceBytes.Length, null, 0);
+
+			// add the namespace bytes (in network order) to the hash
+			var namespaceBytes = namespaceId.ToByteArray();
+			SwapByteOrder(namespaceBytes);
+			algorithm.TransformBlock(namespaceBytes, 0, namespaceBytes.Length, null, 0);
+
+			// add the name to the hash
+			algorithm.TransformFinalBlock(name, 0, name.Length);
+
+			// the initial bytes from the hash are copied straight to the bytes of the new GUID
+			var newGuid = new byte[16];
+			Array.Copy(algorithm.Hash, newGuid, 16);
+
+			// set the version and variant bits
+			newGuid[6] = (byte) ((newGuid[6] & 0x0F) | 0x80);
+			newGuid[8] = (byte) ((newGuid[8] & 0x3F) | 0x80);
+
+			// convert the resulting UUID to local byte order
+			SwapByteOrder(newGuid);
+			return new Guid(newGuid);
+		}
+#endif
+	}
+
+#if NET6_0_OR_GREATER
+	/// <summary>
+	/// Creates a Version 8 UUID from a name in the specified namespace using the specified hash algorithm, according to the algorithm
+	/// in <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-name-based-uuid-generation">draft-ietf-uuidrev-rfc4122bis-07, section 6.5</a>.
+	/// </summary>
+	/// <param name="hashAlgorithmName">The name of the hash algorithm to use. Supported values are <c>SHA256</c>, <c>SHA384</c>, and <c>SHA512</c>.</param>
+	/// <param name="namespaceId">The namespace ID.</param>
+	/// <param name="name">The name within that namespace ID.</param>
+	/// <returns>A version 8 UUID formed by hashing the hash space ID, namespace ID, and name.</returns>
+	/// <remarks>This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#name-name-based-uuid-generation">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
+	public static Guid CreateVersion8FromName(HashAlgorithmName hashAlgorithmName, Guid namespaceId, ReadOnlySpan<byte> name)
+	{
+		var (hashSpaceId, algorithm) = GetHashSpaceAndAlgorithm(hashAlgorithmName);
+		using (algorithm)
+		{
+			Span<byte> buffer = name.Length < 500 ? stackalloc byte[16 + 16 + name.Length] : new byte[16 + 16 + name.Length];
+			Span<byte> hashOutput = stackalloc byte[algorithm.HashSize / 8];
+
+			// convert the hash space and namespace UUIDs to network order
+			if (!hashSpaceId.TryWriteBytes(buffer))
+				throw new InvalidOperationException("Failed to write hash space ID bytes to buffer");
+			SwapByteOrder(buffer);
+			if (!namespaceId.TryWriteBytes(buffer[16..]))
+				throw new InvalidOperationException("Failed to write namespace ID bytes to buffer");
+			SwapByteOrder(buffer[16..]);
+
+			// compute the hash of [ hash space ID, namespace ID, name ]
+			name.CopyTo(buffer[32..]);
+			var success = algorithm.TryComputeHash(buffer, hashOutput, out var bytesWritten);
+			if (!success || bytesWritten != hashOutput.Length)
+				throw new InvalidOperationException("Failed to hash data");
+
+			// the initial bytes from the hash are copied straight to the bytes of the new GUID
+			var newGuid = hashOutput[..16];
+
+			// set the version and variant bits
+			newGuid[6] = (byte) ((newGuid[6] & 0x0F) | 0x80);
+			newGuid[8] = (byte) ((newGuid[8] & 0x3F) | 0x80);
+
+			// convert the resulting UUID to local byte order
+			SwapByteOrder(newGuid);
+			return new Guid(newGuid);
+		}
+	}
+#endif
+
+	private static (Guid NamespaceId, HashAlgorithm Algorithm) GetHashSpaceAndAlgorithm(HashAlgorithmName hashAlgorithmName) =>
+		hashAlgorithmName.Name switch
+		{
+			"SHA256" => (Sha256HashSpaceId, (HashAlgorithm) SHA256.Create()),
+			"SHA384" => (Sha384HashSpaceId, SHA384.Create()),
+			"SHA512" => (Sha512HashSpaceId, SHA512.Create()),
+			_ => throw new ArgumentException($"Unsupported hash algorithm name: {hashAlgorithmName.Name}", nameof(hashAlgorithmName)),
+		};
+
+	/// <summary>
 	/// The namespace for fully-qualified domain names (from RFC 4122, Appendix C).
 	/// </summary>
 	public static readonly Guid DnsNamespace = new("6ba7b810-9dad-11d1-80b4-00c04fd430c8");
@@ -372,6 +473,21 @@ public static class GuidHelpers
 	/// The namespace for ISO OIDs (from RFC 4122, Appendix C).
 	/// </summary>
 	public static readonly Guid IsoOidNamespace = new("6ba7b812-9dad-11d1-80b4-00c04fd430c8");
+
+	/// <summary>
+	/// The hash space ID for SHA-256 hashed names (from <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#appendix-B">draft-ietf-uuidrev-rfc4122bis-07, Appendix B</a>).
+	/// </summary>
+	public static readonly Guid Sha256HashSpaceId = new("3fb32780-953c-4464-9cfd-e85dbbe9843d");
+
+	/// <summary>
+	/// The hash space ID for SHA-384 hashed names (from <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#appendix-B">draft-ietf-uuidrev-rfc4122bis-07, Appendix B</a>).
+	/// </summary>
+	public static readonly Guid Sha384HashSpaceId = new("e6800581-f333-484b-8778-601ff2b58da8");
+
+	/// <summary>
+	/// The hash space ID for SHA-512 hashed names (from <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis#appendix-B">draft-ietf-uuidrev-rfc4122bis-07, Appendix B</a>).
+	/// </summary>
+	public static readonly Guid Sha512HashSpaceId = new("0fde22f2-e7ba-4fd1-9753-9c2ea88fa3f9");
 
 	// Converts a GUID (expressed as a byte array) to/from network order (MSB-first).
 	internal static void SwapByteOrder(Span<byte> guid)
