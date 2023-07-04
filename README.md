@@ -25,6 +25,11 @@ var guid = GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.org
 var guidv3 = GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.org"u8, version: 3);
 ```
 
+### ULID Compatibility
+
+Because UUIDv7 and [ULID](https://github.com/ulid/spec) share the same format (48-bit Unix timestamp,
+80 bits of random data), any v7 GUID can be converted to a ULID string by using `GuidHelpers.ToUlidString`.
+
 ### Experimental
 
 The following APIs are based on the current [working draft](https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis)
@@ -36,6 +41,9 @@ var guidv6 = GuidHelpers.CreateVersion6FromVersion1(GuidHelpers.DnsNamespace);
 
 // creates a v7 GUID using the current time and random data 
 var guidv7 = GuidHelpers.CreateVersion7();
+
+// any v7 GUID can be converted to a ULID string
+var ulid = GuidHelpers.ToUlidString(guidv7);
 
 // .NET 8 only: specify a TimeProvider to provide the timestamp
 var guidv7WithTime = GuidHelpers.CreateVersion7(TimeProvider.System);
