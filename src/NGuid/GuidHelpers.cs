@@ -300,6 +300,147 @@ public static class GuidHelpers
 	}
 
 	/// <summary>
+	/// Returns the specified UUIDv7 <see cref="Guid"/> as a string in <a href="https://github.com/ulid/spec">ULID format</a>.
+	/// </summary>
+	/// <param name="guid">The <see cref="Guid"/> to format as a ULID string.</param>
+	/// <returns>A ULID string for the specified <see cref="Guid"/>.</returns>
+	public static string ToUlidString(Guid guid)
+	{
+#if NET6_0_OR_GREATER
+		return string.Create(26, guid, (c, g) =>
+		{
+			if (!TryFormatUlid(g, c, out _))
+			{
+				// we have provided a large-enough buffer, so the only reason for failure is an incorrect UUID version
+				throw new ArgumentException("The GUID must be a version 7 UUID.", nameof(guid));
+			}
+		});
+#else
+		var chars = new char[26];
+		if (!TryFormatUlid(guid, chars, out _))
+		{
+			// we have provided a large-enough buffer, so the only reason for failure is an incorrect UUID version
+			throw new ArgumentException("The GUID must be a version 7 UUID.", nameof(guid));
+		}
+		return new string(chars);
+#endif
+	}
+
+	/// <summary>
+	/// Tries to format the specified GUID into the provided character span as a ULID.
+	/// </summary>
+	/// <param name="guid">The <see cref="Guid"/> to format.</param>
+	/// <param name="destination">The span in which to write the GUID as a span of characters in <a href="https://github.com/ulid/spec">ULID format</a>.
+	/// There must be at least 26 characters available for the formatting operation to succeed.</param>
+	/// <param name="charsWritten">When this method returns, contains the number of characters written into the span.</param>
+	/// <returns><c>true</c> if the formatting operation was successful; otherwise, <c>false</c>.</returns>
+	/// <remarks>Only Version 7 UUID instances can be formatted as a ULID.</remarks>
+	public static bool TryFormatUlid(Guid guid, Span<char> destination, out int charsWritten)
+	{
+		if (destination.Length < 26)
+		{
+			charsWritten = 0;
+			return false;
+		}
+
+		// check that the GUID is a version 7 GUID
+#if NET6_0_OR_GREATER
+		Span<byte> guidBytes = stackalloc byte[16];
+		if (!guid.TryWriteBytes(guidBytes) || (guidBytes[7] & 0xF0) != 0x70)
+		{
+			charsWritten = 0;
+			return false;
+		}
+#else
+		var guidBytes = guid.ToByteArray();
+		if ((guidBytes[7] & 0xF0) != 0x70)
+		{
+			charsWritten = 0;
+			return false;
+		}
+#endif
+
+		FormatUlid(guidBytes, CrockfordBase32Chars, destination);
+
+		charsWritten = 26;
+		return true;
+	}
+
+	/// <summary>
+	/// Tries to format the specified GUID into the provided byte span as a ULID encoded as UTF-8.
+	/// </summary>
+	/// <param name="guid">The <see cref="Guid"/> to format.</param>
+	/// <param name="destination">The span in which to write the GUID as a span of UTF-8 bytes in <a href="https://github.com/ulid/spec">ULID format</a>.
+	/// There must be at least 26 bytes available for the formatting operation to succeed.</param>
+	/// <param name="bytesWritten">When this method returns, contains the number of bytes written into the span.</param>
+	/// <returns><c>true</c> if the formatting operation was successful; otherwise, <c>false</c>.</returns>
+	/// <remarks>Only Version 7 UUID instances can be formatted as a ULID.</remarks>
+	public static bool TryFormatUlid(Guid guid, Span<byte> destination, out int bytesWritten)
+	{
+		if (destination.Length < 26)
+		{
+			bytesWritten = 0;
+			return false;
+		}
+
+		// check that the GUID is a version 7 GUID
+#if NET6_0_OR_GREATER
+		Span<byte> guidBytes = stackalloc byte[16];
+		if (!guid.TryWriteBytes(guidBytes) || (guidBytes[7] & 0xF0) != 0x70)
+		{
+			bytesWritten = 0;
+			return false;
+		}
+#else
+		var guidBytes = guid.ToByteArray();
+		if ((guidBytes[7] & 0xF0) != 0x70)
+		{
+			bytesWritten = 0;
+			return false;
+		}
+#endif
+
+		FormatUlid(guidBytes, CrockfordBase32Bytes, destination);
+
+		bytesWritten = 26;
+		return true;
+	}
+
+	private static void FormatUlid<T>(ReadOnlySpan<byte> guidBytes, ReadOnlySpan<T> base32, Span<T> output)
+		where T : struct
+	{
+		// encode the 48-bit timestamp to Base32, swapping the byte order to big-endian
+		output[0] = base32[guidBytes[3] >> 5];
+		output[1] = base32[guidBytes[3] & 0x1F];
+		output[2] = base32[guidBytes[2] >> 3];
+		output[3] = base32[((guidBytes[2] & 0x7) << 2) | (guidBytes[1] >> 6)];
+		output[4] = base32[(guidBytes[1] & 0x3E) >> 1];
+		output[5] = base32[((guidBytes[1] & 0x1) << 4) | (guidBytes[0] >> 4)];
+		output[6] = base32[((guidBytes[0] & 0xF) << 1) | (guidBytes[5] >> 7)];
+		output[7] = base32[(guidBytes[5] & 0x7C) >> 2];
+		output[8] = base32[((guidBytes[5] & 0x3) << 3) | (guidBytes[4] >> 5)];
+		output[9] = base32[guidBytes[4] & 0x1F];
+
+		// encode the 80-bit randomness to Base32
+		output[10] = base32[guidBytes[7] >> 3];
+		output[11] = base32[((guidBytes[7] & 0x7) << 2) | (guidBytes[6] >> 6)];
+		output[12] = base32[(guidBytes[6] & 0x3E) >> 1];
+		output[13] = base32[((guidBytes[6] & 0x1) << 4) | (guidBytes[8] >> 4)];
+		output[14] = base32[((guidBytes[8] & 0xF) << 1) | (guidBytes[9] >> 7)];
+		output[15] = base32[(guidBytes[9] & 0x7C) >> 2];
+		output[16] = base32[((guidBytes[9] & 0x3) << 3) | (guidBytes[10] >> 5)];
+		output[17] = base32[guidBytes[10] & 0x1F];
+		output[18] = base32[guidBytes[11] >> 3];
+		output[19] = base32[((guidBytes[11] & 0x7) << 2) | (guidBytes[12] >> 6)];
+		output[20] = base32[(guidBytes[12] & 0x3E) >> 1];
+		output[21] = base32[((guidBytes[12] & 0x1) << 4) | (guidBytes[13] >> 4)];
+		output[22] = base32[((guidBytes[13] & 0xF) << 1) | (guidBytes[14] >> 7)];
+		output[23] = base32[(guidBytes[14] & 0x7C) >> 2];
+		output[24] = base32[((guidBytes[14] & 0x3) << 3) | (guidBytes[15] >> 5)];
+		output[25] = base32[guidBytes[15] & 0x1F];
+	}
+
+	/// <summary>
 	/// Creates a Version 8 UUID from 122 bits of the specified input. All byte values will be copied to the returned
 	/// <see cref="Guid"/> except for the reserved <c>version</c> and <c>variant</c> bits, which will be set to 8
 	/// and 2 respectively.
@@ -518,6 +659,13 @@ public static class GuidHelpers
 		ref var first = ref Unsafe.AsRef(guid[0]);
 		(Unsafe.Add(ref first, right), Unsafe.Add(ref first, left)) = (Unsafe.Add(ref first, left), Unsafe.Add(ref first, right));
 	}
+
+#if NET6_0_OR_GREATER
+	private static ReadOnlySpan<char> CrockfordBase32Chars => "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+#else
+	private static ReadOnlySpan<char> CrockfordBase32Chars => "0123456789ABCDEFGHJKMNPQRSTVWXYZ".AsSpan();
+#endif
+	private static ReadOnlySpan<byte> CrockfordBase32Bytes => "0123456789ABCDEFGHJKMNPQRSTVWXYZ"u8;
 
 	// UUID v1 and v6 uses a count of 100-nanosecond intervals since 00:00:00.00 UTC, 15 October 1582
 	private static readonly DateTime s_gregorianEpoch = new DateTime(1582, 10, 15, 0, 0, 0, DateTimeKind.Utc);

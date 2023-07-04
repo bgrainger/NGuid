@@ -123,6 +123,50 @@ public class GuidHelpersTests
 		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion6FromVersion1(Guid.NewGuid()));
 
 	[Theory]
+	[InlineData(0, false, 0)]
+	[InlineData(25, false, 0)]
+	[InlineData(26, true, 26)]
+	[InlineData(40, true, 26)]
+	public void TryFormatUlidChars(int bufferSize, bool expectedSuccess, int expectedCharsWritten)
+	{
+		var buffer = new char[bufferSize];
+		var guid = GuidHelpers.CreateVersion7();
+		var success = GuidHelpers.TryFormatUlid(guid, buffer, out var charsWritten);
+		Assert.Equal(expectedSuccess, success);
+		Assert.Equal(expectedCharsWritten, charsWritten);
+	}
+
+	[Theory]
+	[InlineData(0, false, 0)]
+	[InlineData(25, false, 0)]
+	[InlineData(26, true, 26)]
+	[InlineData(40, true, 26)]
+	public void TryFormatUlidBytes(int bufferSize, bool expectedSuccess, int expectedBytesWritten)
+	{
+		Span<byte> buffer = stackalloc byte[bufferSize];
+		var guid = GuidHelpers.CreateVersion7();
+		var success = GuidHelpers.TryFormatUlid(guid, buffer, out var bytesWritten);
+		Assert.Equal(expectedSuccess, success);
+		Assert.Equal(expectedBytesWritten, bytesWritten);
+	}
+
+#if NET8_0_OR_GREATER
+	[Theory]
+	[InlineData(0L, "0000000000")] // https://github.com/azam/ulidj/blob/a3078e5407bf377cf8e0077c181ea9e2917608f6/src/test/java/io/azam/ulidj/ULIDTest.java#L74
+	[InlineData(1L, "0000000001")] // https://github.com/azam/ulidj/blob/a3078e5407bf377cf8e0077c181ea9e2917608f6/src/test/java/io/azam/ulidj/ULIDTest.java#L79
+	[InlineData(0xFFL, "000000007Z")] // https://github.com/azam/ulidj/blob/a3078e5407bf377cf8e0077c181ea9e2917608f6/src/test/java/io/azam/ulidj/ULIDTest.java#L92
+	[InlineData(0x100L, "0000000080")] // https://github.com/azam/ulidj/blob/a3078e5407bf377cf8e0077c181ea9e2917608f6/src/test/java/io/azam/ulidj/ULIDTest.java#L93
+	[InlineData(1469918176385L, "01ARYZ6S41")] // https://github.com/ulid/javascript/blob/a5831206a11636c94d4657b9e1a1354c529ee4e9/test.js#L149-L151
+	[InlineData(253402300799999L, "76EZ91ZPZZ")] // https://github.com/RobThree/NUlid/blob/21e9dc80c9891d3f7ac957889ab19819f9180bf0/NUlid.Tests/UlidTests.cs#L187C5-L191
+	public void CreateUlidWithSpecifiedTime(long unixTimeMs, string expectedPrefix)
+	{
+		var timeProvider = new FixedTimeProvider(DateTimeOffset.FromUnixTimeMilliseconds(unixTimeMs));
+		var guid = GuidHelpers.CreateVersion7(timeProvider);
+		Assert.StartsWith(expectedPrefix, GuidHelpers.ToUlidString(guid), StringComparison.Ordinal);
+	}
+#endif
+
+	[Theory]
 	[InlineData("00112233445566778899AABBCCDDEEFF", "00112233-4455-8677-8899-aabbccddeeff")]
 	[InlineData("112233445566778899AABBCCDDEEFF00", "11223344-5566-8788-99aa-bbccddeeff00")]
 	[InlineData("00000000000000000000000000000000", "00000000-0000-8000-8000-000000000000")]
