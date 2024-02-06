@@ -163,7 +163,7 @@ public class GuidHelpersTests
 #if NET8_0_OR_GREATER
 	[Fact]
 	public void CreateV8FromEmptySpan() =>
-		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion8(stackalloc byte[0]));
+		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion8([]));
 
 	[Fact]
 	public void CreateV8FromShortSpan() =>
@@ -180,16 +180,9 @@ public class GuidHelpersTests
 		Assert.Equal(new Guid(expected), GuidHelpers.CreateVersion8FromName(new(algorithmName), new(namespaceId), Encoding.ASCII.GetBytes(name)));
 
 #if NET8_0_OR_GREATER
-	private sealed class FixedTimeProvider : TimeProvider
+	private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
 	{
-		public FixedTimeProvider(DateTimeOffset utcNow)
-		{
-			m_utcNow = utcNow;
-		}
-
-		public override DateTimeOffset GetUtcNow() => m_utcNow;
-
-		private readonly DateTimeOffset m_utcNow;
+		public override DateTimeOffset GetUtcNow() => utcNow;
 	}
 #endif
 }
