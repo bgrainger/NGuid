@@ -14,8 +14,6 @@ jobs:
 
     - name: Set up .NET
       uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '8.0.x'
 
     - name: Restore
       run: dotnet restore
@@ -26,7 +24,7 @@ jobs:
     - name: Test
       run: dotnet test --configuration Release --no-build --logger "trx;LogFileName=test-results.trx"
 
-    - name: Upload Test Results 
+    - name: Upload Test Results
       uses: actions/upload-artifact@v3
       if: success() || failure()
       with:
@@ -36,7 +34,7 @@ jobs:
     - name: Pack
       run: dotnet pack --configuration Release --no-build
 
-    - name: Upload NuGet Package 
+    - name: Upload NuGet Package
       uses: actions/upload-artifact@v3
       with:
         name: nuget
