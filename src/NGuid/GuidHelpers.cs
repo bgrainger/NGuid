@@ -309,7 +309,7 @@ public static class GuidHelpers
 	/// <remarks>This method treats the in MSB order; the first byte in <paramref name="bytes"/>
 	/// will be the first byte in the standard string representation of the returned <see cref="Guid"/>.
 	/// This is the opposite of how the <see cref="Guid(byte[])"/> constructor treats its argument, and
-	/// will cause <see cref="Guid.ToByteArray"/> to return a byte array whose bytes values are
+	/// will cause <see cref="Guid.ToByteArray()"/> to return a byte array whose bytes values are
 	/// "reversed" compared to the input values in <paramref name="bytes"/>.
 	/// This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis-07#name-uuid-version-8">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
 	public static Guid CreateVersion8(byte[] bytes)
@@ -349,7 +349,7 @@ public static class GuidHelpers
 	/// <remarks>This method treats the in MSB order; the first byte in <paramref name="bytes"/>
 	/// will be the first byte in the standard string representation of the returned <see cref="Guid"/>.
 	/// This is the opposite of how the <see cref="Guid(byte[])"/> constructor treats its argument, and
-	/// will cause <see cref="Guid.ToByteArray"/> to return a byte array whose bytes values are
+	/// will cause <see cref="Guid.ToByteArray()"/> to return a byte array whose bytes values are
 	/// "reversed" compared to the input values in <paramref name="bytes"/>.
 	/// This method is based on <a href="https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis-07#name-uuid-version-8">draft-ietf-uuidrev-rfc4122bis-07</a> and is subject to change.</remarks>
 	[SkipLocalsInit]
@@ -515,7 +515,7 @@ public static class GuidHelpers
 
 	private static void SwapBytes(Span<byte> guid, int left, int right)
 	{
-		ref var first = ref Unsafe.AsRef(guid[0]);
+		ref var first = ref Unsafe.AsRef(in guid[0]);
 		(Unsafe.Add(ref first, right), Unsafe.Add(ref first, left)) = (Unsafe.Add(ref first, left), Unsafe.Add(ref first, right));
 	}
 
