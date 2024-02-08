@@ -387,28 +387,27 @@ public static class GuidHelpers
 #if NET6_0_OR_GREATER
 		return CreateVersion8FromName(hashAlgorithmName, namespaceId, name.AsSpan());
 #else
-		using (var algorithm = GetHashAlgorithm(hashAlgorithmName))
-		{
-			// add the namespace bytes (in network order) to the hash
-			var namespaceBytes = namespaceId.ToByteArray();
-			SwapByteOrder(namespaceBytes);
-			algorithm.TransformBlock(namespaceBytes, 0, namespaceBytes.Length, null, 0);
+		using var algorithm = GetHashAlgorithm(hashAlgorithmName);
 
-			// add the name to the hash
-			algorithm.TransformFinalBlock(name, 0, name.Length);
+		// add the namespace bytes (in network order) to the hash
+		var namespaceBytes = namespaceId.ToByteArray();
+		SwapByteOrder(namespaceBytes);
+		algorithm.TransformBlock(namespaceBytes, 0, namespaceBytes.Length, null, 0);
 
-			// the initial bytes from the hash are copied straight to the bytes of the new GUID
-			var newGuid = new byte[16];
-			Array.Copy(algorithm.Hash, newGuid, 16);
+		// add the name to the hash
+		algorithm.TransformFinalBlock(name, 0, name.Length);
 
-			// set the version and variant bits
-			newGuid[6] = (byte) ((newGuid[6] & 0x0F) | 0x80);
-			newGuid[8] = (byte) ((newGuid[8] & 0x3F) | 0x80);
+		// the initial bytes from the hash are copied straight to the bytes of the new GUID
+		var newGuid = new byte[16];
+		Array.Copy(algorithm.Hash, newGuid, 16);
 
-			// convert the resulting UUID to local byte order
-			SwapByteOrder(newGuid);
-			return new Guid(newGuid);
-		}
+		// set the version and variant bits
+		newGuid[6] = (byte) ((newGuid[6] & 0x0F) | 0x80);
+		newGuid[8] = (byte) ((newGuid[8] & 0x3F) | 0x80);
+
+		// convert the resulting UUID to local byte order
+		SwapByteOrder(newGuid);
+		return new Guid(newGuid);
 #endif
 	}
 
@@ -425,33 +424,31 @@ public static class GuidHelpers
 	[SkipLocalsInit]
 	public static Guid CreateVersion8FromName(HashAlgorithmName hashAlgorithmName, Guid namespaceId, ReadOnlySpan<byte> name)
 	{
-		using (var algorithm = GetHashAlgorithm(hashAlgorithmName))
-		{
-			Span<byte> buffer = name.Length < 500 ? stackalloc byte[16 + name.Length] : new byte[16 + name.Length];
-			Span<byte> hashOutput = stackalloc byte[algorithm.HashSize / 8];
+		using var algorithm = GetHashAlgorithm(hashAlgorithmName);
+		Span<byte> buffer = name.Length < 500 ? stackalloc byte[16 + name.Length] : new byte[16 + name.Length];
+		Span<byte> hashOutput = stackalloc byte[algorithm.HashSize / 8];
 
-			// convert the hash space and namespace UUIDs to network order
-			if (!namespaceId.TryWriteBytes(buffer))
-				throw new InvalidOperationException("Failed to write namespace ID bytes to buffer");
-			SwapByteOrder(buffer);
+		// convert the hash space and namespace UUIDs to network order
+		if (!namespaceId.TryWriteBytes(buffer))
+			throw new InvalidOperationException("Failed to write namespace ID bytes to buffer");
+		SwapByteOrder(buffer);
 
-			// compute the hash of [ namespace ID, name ]
-			name.CopyTo(buffer[16..]);
-			var success = algorithm.TryComputeHash(buffer, hashOutput, out var bytesWritten);
-			if (!success || bytesWritten != hashOutput.Length)
-				throw new InvalidOperationException("Failed to hash data");
+		// compute the hash of [ namespace ID, name ]
+		name.CopyTo(buffer[16..]);
+		var success = algorithm.TryComputeHash(buffer, hashOutput, out var bytesWritten);
+		if (!success || bytesWritten != hashOutput.Length)
+			throw new InvalidOperationException("Failed to hash data");
 
-			// the initial bytes from the hash are copied straight to the bytes of the new GUID
-			var newGuid = hashOutput[..16];
+		// the initial bytes from the hash are copied straight to the bytes of the new GUID
+		var newGuid = hashOutput[..16];
 
-			// set the version and variant bits
-			newGuid[6] = (byte) ((newGuid[6] & 0x0F) | 0x80);
-			newGuid[8] = (byte) ((newGuid[8] & 0x3F) | 0x80);
+		// set the version and variant bits
+		newGuid[6] = (byte) ((newGuid[6] & 0x0F) | 0x80);
+		newGuid[8] = (byte) ((newGuid[8] & 0x3F) | 0x80);
 
-			// convert the resulting UUID to local byte order
-			SwapByteOrder(newGuid);
-			return new Guid(newGuid);
-		}
+		// convert the resulting UUID to local byte order
+		SwapByteOrder(newGuid);
+		return new Guid(newGuid);
 	}
 #endif
 
