@@ -26,7 +26,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <MinVerDefaultPreReleaseIdentifiers>beta.0</MinVerDefaultPreReleaseIdentifiers>
     <Authors>Bradley Grainger</Authors>
-    <Copyright>Copyright 2023 Bradley Grainger</Copyright>
+    <Copyright>Copyright 2023–2024 Bradley Grainger</Copyright>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">

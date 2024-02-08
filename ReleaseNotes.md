@@ -1,5 +1,12 @@
 # Release Notes
 
+## 0.3.0
+
+Update to Version 14 of the RFC draft.
+
+* **Breaking** Remove public `Guid` properties for hash space IDs.
+* `GuidHelpers.CreateVersion8FromName` no longer hashes the hash space ID, meaning that it generates a different UUID (than v0.2.0) for the same algorithm, namespace ID, and name.
+
 ## 0.2.0
 
 Add the following experimental APIs:
