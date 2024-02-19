@@ -424,9 +424,13 @@ public static class GuidHelpers
 	[SkipLocalsInit]
 	public static Guid CreateVersion8FromName(HashAlgorithmName hashAlgorithmName, Guid namespaceId, ReadOnlySpan<byte> name)
 	{
+#if NET9_0_OR_GREATER
+		Span<byte> hashOutput = stackalloc byte[64];
+#else
 		using var algorithm = GetHashAlgorithm(hashAlgorithmName);
-		Span<byte> buffer = name.Length < 500 ? stackalloc byte[16 + name.Length] : new byte[16 + name.Length];
 		Span<byte> hashOutput = stackalloc byte[algorithm.HashSize / 8];
+#endif
+		Span<byte> buffer = name.Length < 500 ? stackalloc byte[16 + name.Length] : new byte[16 + name.Length];
 
 		// convert the hash space and namespace UUIDs to network order
 		if (!namespaceId.TryWriteBytes(buffer))
@@ -435,9 +439,16 @@ public static class GuidHelpers
 
 		// compute the hash of [ namespace ID, name ]
 		name.CopyTo(buffer[16..]);
+#if NET9_0_OR_GREATER
+		var hashLength = CryptographicOperations.HashData(hashAlgorithmName, buffer, hashOutput);
+		if (hashLength == 0)
+			throw new InvalidOperationException("Failed to hash data");
+		hashOutput = hashOutput[..hashLength];
+#else
 		var success = algorithm.TryComputeHash(buffer, hashOutput, out var bytesWritten);
 		if (!success || bytesWritten != hashOutput.Length)
 			throw new InvalidOperationException("Failed to hash data");
+#endif
 
 		// the initial bytes from the hash are copied straight to the bytes of the new GUID
 		var newGuid = hashOutput[..16];
@@ -452,6 +463,7 @@ public static class GuidHelpers
 	}
 #endif
 
+#if !NET9_0_OR_GREATER
 	private static HashAlgorithm GetHashAlgorithm(HashAlgorithmName hashAlgorithmName) =>
 		hashAlgorithmName.Name switch
 		{
@@ -460,6 +472,7 @@ public static class GuidHelpers
 			"SHA512" => SHA512.Create(),
 			_ => throw new ArgumentException($"Unsupported hash algorithm name: {hashAlgorithmName.Name}", nameof(hashAlgorithmName)),
 		};
+#endif
 
 	/// <summary>
 	/// The namespace for fully-qualified domain names (from RFC 4122, Appendix C).
