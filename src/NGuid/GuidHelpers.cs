@@ -106,9 +106,14 @@ public static class GuidHelpers
 
 		// convert the namespace UUID to network order (step 3)
 		Span<byte> buffer = name.Length < 500 ? stackalloc byte[16 + name.Length + 20] : new byte[16 + name.Length + 20];
+#if NET8_0_OR_GREATER
+		if (!namespaceId.TryWriteBytes(buffer, bigEndian: true, out _))
+			throw new InvalidOperationException("Failed to write namespace ID bytes to buffer");
+#else
 		if (!namespaceId.TryWriteBytes(buffer))
 			throw new InvalidOperationException("Failed to write Guid bytes to buffer");
 		SwapByteOrder(buffer);
+#endif
 
 		// compute the hash of the namespace ID concatenated with the name (step 4)
 #pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms
@@ -131,9 +136,13 @@ public static class GuidHelpers
 		// set the two most significant bits (bits 6 and 7) of the clock_seq_hi_and_reserved to zero and one, respectively (step 10)
 		newGuid[8] = (byte) ((newGuid[8] & 0x3F) | 0x80);
 
+#if NET8_0_OR_GREATER
+		return new Guid(newGuid, bigEndian: true);
+#else
 		// convert the resulting UUID to local byte order (step 13)
 		SwapByteOrder(newGuid);
 		return new Guid(newGuid);
+#endif
 	}
 #endif
 
@@ -354,14 +363,17 @@ public static class GuidHelpers
 		Span<byte> guidBytes = stackalloc byte[16];
 		bytes[..16].CopyTo(guidBytes);
 
-		// convert the bytes to network order (so that bytes[0] is the first byte in the serialized GUID output)
-		SwapByteOrder(guidBytes);
-
 		// set the version and variant fields
-		guidBytes[7] = (byte) (0x80 | (guidBytes[7] & 0xF));
+		guidBytes[6] = (byte) (0x80 | (guidBytes[6] & 0xF));
 		guidBytes[8] = (byte) (0x80 | (guidBytes[8] & 0x3F));
 
+#if NET8_0_OR_GREATER
+		return new Guid(guidBytes, bigEndian: true);
+#else
+		// convert the bytes to network order (so that bytes[0] is the first byte in the serialized GUID output)
+		SwapByteOrder(guidBytes);
 		return new Guid(guidBytes);
+#endif
 	}
 #endif
 
@@ -422,10 +434,15 @@ public static class GuidHelpers
 #endif
 		Span<byte> buffer = name.Length < 500 ? stackalloc byte[16 + name.Length] : new byte[16 + name.Length];
 
+#if NET8_0_OR_GREATER
+		if (!namespaceId.TryWriteBytes(buffer, bigEndian: true, out _))
+			throw new InvalidOperationException("Failed to write namespace ID bytes to buffer");
+#else
 		// convert the hash space and namespace UUIDs to network order
 		if (!namespaceId.TryWriteBytes(buffer))
 			throw new InvalidOperationException("Failed to write namespace ID bytes to buffer");
 		SwapByteOrder(buffer);
+#endif
 
 		// compute the hash of [ namespace ID, name ]
 		name.CopyTo(buffer[16..]);
@@ -447,9 +464,13 @@ public static class GuidHelpers
 		newGuid[6] = (byte) ((newGuid[6] & 0x0F) | 0x80);
 		newGuid[8] = (byte) ((newGuid[8] & 0x3F) | 0x80);
 
+#if NET8_0_OR_GREATER
+		return new Guid(newGuid, bigEndian: true);
+#else
 		// convert the resulting UUID to local byte order
 		SwapByteOrder(newGuid);
 		return new Guid(newGuid);
+#endif
 	}
 #endif
 
@@ -479,6 +500,7 @@ public static class GuidHelpers
 	/// </summary>
 	public static readonly Guid IsoOidNamespace = new("6ba7b812-9dad-11d1-80b4-00c04fd430c8");
 
+#if !NET8_0_OR_GREATER
 	// Converts a GUID (expressed as a byte array) to/from network order (MSB-first).
 	internal static void SwapByteOrder(Span<byte> guid)
 	{
@@ -487,6 +509,7 @@ public static class GuidHelpers
 		SwapBytes(guid, 4, 5);
 		SwapBytes(guid, 6, 7);
 	}
+#endif
 
 	private static void SwapBytes(Span<byte> guid, int left, int right)
 	{

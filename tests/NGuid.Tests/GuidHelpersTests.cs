@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using System.Globalization;
 using System.Text;
 
 namespace NGuid.Tests;
@@ -13,8 +12,10 @@ public class GuidHelpersTests
 		var bytes = guid.ToByteArray();
 		Assert.Equal([4, 3, 2, 1, 6, 5, 8, 7, 9, 10, 11, 12, 13, 14, 15, 16], bytes);
 
+#if !NET8_0_OR_GREATER
 		GuidHelpers.SwapByteOrder(bytes);
 		Assert.Equal([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], bytes);
+#endif
 	}
 
 	[Theory]
@@ -83,7 +84,7 @@ public class GuidHelpersTests
 	[InlineData("2022-02-22T14:22:22-05:00", "1ec9414c-232a-6b00")] // https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis-14#name-example-of-a-uuidv6-value
 	public void CreateV6FromTimeProvider(string timestamp, string expectedPrefix)
 	{
-		var timeProvider = new FixedTimeProvider(DateTimeOffset.Parse(timestamp, CultureInfo.InvariantCulture));
+		var timeProvider = new FixedTimeProvider(DateTimeOffset.Parse(timestamp, System.Globalization.CultureInfo.InvariantCulture));
 		var guid = GuidHelpers.CreateVersion6(timeProvider);
 		Assert.StartsWith(expectedPrefix, guid.ToString("d"), StringComparison.Ordinal);
 	}
@@ -108,7 +109,7 @@ public class GuidHelpersTests
 	[InlineData("2022-02-22T14:22:22-05:00", "017f22e2-79b0-7")] // https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis-14#name-example-of-a-uuidv7-value
 	public void CreateV7FromTimeProvider(string timestamp, string expectedPrefix)
 	{
-		var timeProvider = new FixedTimeProvider(DateTimeOffset.Parse(timestamp, CultureInfo.InvariantCulture));
+		var timeProvider = new FixedTimeProvider(DateTimeOffset.Parse(timestamp, System.Globalization.CultureInfo.InvariantCulture));
 		var guid = GuidHelpers.CreateVersion7(timeProvider);
 		Assert.StartsWith(expectedPrefix, guid.ToString("d"), StringComparison.Ordinal);
 	}
@@ -129,12 +130,12 @@ public class GuidHelpersTests
 	[InlineData("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", "ffffffff-ffff-8fff-bfff-ffffffffffff")]
 	public void CreateV8(string input, string expected)
 	{
-#if NET8_0_OR_GREATER
+#if NET5_0_OR_GREATER
 		var bytes = Convert.FromHexString(input);
 #else
 		var bytes = new byte[input.Length / 2];
 		for (var i = 0; i < bytes.Length; i++)
-			bytes[i] = byte.Parse(input.Substring(i * 2, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+			bytes[i] = byte.Parse(input.Substring(i * 2, 2), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture);
 #endif
 		var guid = GuidHelpers.CreateVersion8(bytes);
 		Assert.Equal(new Guid(expected), guid);
