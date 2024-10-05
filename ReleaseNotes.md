@@ -1,5 +1,11 @@
 # Release Notes
 
+## 1.0.0
+
+* Update to RFC 9562. (There are no changes from Version 14 of the RFC draft.)
+* Support .NET 9.
+* Use `Guid(bytes, bigEndian)` constructor under .NET 8 instead of byte swapping.
+
 ## 0.3.0
 
 Update to Version 14 of the RFC draft.
