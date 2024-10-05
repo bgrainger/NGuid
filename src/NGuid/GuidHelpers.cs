@@ -10,7 +10,7 @@ namespace NGuid;
 public static class GuidHelpers
 {
 	/// <summary>
-	/// Creates a name-based UUID using the algorithm from <a href="https://datatracker.ietf.org/doc/html/rfc4122#section-4.3">RFC 4122 §4.3</a>.
+	/// Creates a name-based UUID using the algorithm from <a href="https://www.rfc-editor.org/rfc/rfc4122#section-4.3">RFC 4122 §4.3</a>.
 	/// </summary>
 	/// <param name="namespaceId">The ID of the namespace.</param>
 	/// <param name="name">The name (within that namespace). This string will be converted to UTF-8
@@ -43,7 +43,7 @@ public static class GuidHelpers
 	}
 
 	/// <summary>
-	/// Creates a name-based UUID using the algorithm from <a href="https://datatracker.ietf.org/doc/html/rfc4122#section-4.3">RFC 4122 §4.3</a>.
+	/// Creates a name-based UUID using the algorithm from <a href="https://www.rfc-editor.org/rfc/rfc4122#section-4.3">RFC 4122 §4.3</a>.
 	/// </summary>
 	/// <param name="namespaceId">The ID of the namespace.</param>
 	/// <param name="name">The name (within that namespace).</param>
@@ -90,7 +90,7 @@ public static class GuidHelpers
 
 #if NET6_0_OR_GREATER
 	/// <summary>
-	/// Creates a name-based UUID using the algorithm from <a href="https://datatracker.ietf.org/doc/html/rfc4122#section-4.3">RFC 4122 §4.3</a>.
+	/// Creates a name-based UUID using the algorithm from <a href="https://www.rfc-editor.org/rfc/rfc4122#section-4.3">RFC 4122 §4.3</a>.
 	/// </summary>
 	/// <param name="namespaceId">The ID of the namespace.</param>
 	/// <param name="name">The name (within that namespace).</param>
@@ -379,7 +379,7 @@ public static class GuidHelpers
 
 	/// <summary>
 	/// Creates a Version 8 UUID from a name in the specified namespace using the specified hash algorithm, according to the algorithm
-	/// in <a href="https://datatracker.ietf.org/doc/html/rfc9562#name-name-based-uuid-generation">RFC 9562, section 6.5</a>.
+	/// in <a href="https://www.rfc-editor.org/rfc/rfc9562#name-name-based-uuid-generation">RFC 9562, section 6.5</a>.
 	/// </summary>
 	/// <param name="hashAlgorithmName">The name of the hash algorithm to use. Supported values are <c>SHA256</c>, <c>SHA384</c>, and <c>SHA512</c>.</param>
 	/// <param name="namespaceId">The namespace ID.</param>
@@ -417,7 +417,7 @@ public static class GuidHelpers
 #if NET6_0_OR_GREATER
 	/// <summary>
 	/// Creates a Version 8 UUID from a name in the specified namespace using the specified hash algorithm, according to the algorithm
-	/// in <a href="https://datatracker.ietf.org/doc/html/rfc9562#name-name-based-uuid-generation">RFC 9562, section 6.5</a>.
+	/// in <a href="https://www.rfc-editor.org/rfc/rfc9562#name-name-based-uuid-generation">RFC 9562, section 6.5</a>.
 	/// </summary>
 	/// <param name="hashAlgorithmName">The name of the hash algorithm to use. Supported values are <c>SHA256</c>, <c>SHA384</c>, and <c>SHA512</c>.</param>
 	/// <param name="namespaceId">The namespace ID.</param>

@@ -6,8 +6,8 @@
 ## About
 
 NGuid provides efficient creation of name-based, time-based, and random GUIDs according to
-[RFC 4122](https://datatracker.ietf.org/doc/html/rfc4122)
-and [RFC 9562](https://datatracker.ietf.org/doc/html/rfc9562):
+[RFC 4122](https://www.rfc-editor.org/rfc/rfc4122)
+and [RFC 9562](https://www.rfc-editor.org/rfc/rfc9562):
 
 * Version 3 ‒ created from an MD5 hash of a name
 * Version 5 ‒ created from a SHA1 hash of a name

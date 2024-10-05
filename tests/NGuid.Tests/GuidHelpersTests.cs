@@ -29,8 +29,8 @@ public class GuidHelpersTests
 	[Theory]
 	[InlineData("www.terraform.io", 5, "a5008fae-b28c-5ba5-96cd-82b4c53552d6")] // https://developer.hashicorp.com/terraform/language/functions/uuidv5
 	[InlineData("www.example.org", 5, "74738ff5-5367-5958-9aee-98fffdcd1876")] // https://stackoverflow.com/a/5541986/23633
-	[InlineData("www.example.com", 3, "5df41881-3aed-3515-88a7-2f4a814cf09e")] // https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis-14#name-example-of-a-uuidv3-value
-	[InlineData("www.example.com", 5, "2ed6657d-e927-568b-95e1-2665a8aea6a2")] // https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis-14#name-example-of-a-uuidv5-value
+	[InlineData("www.example.com", 3, "5df41881-3aed-3515-88a7-2f4a814cf09e")] // https://www.rfc-editor.org/rfc/rfc9562#name-example-of-a-uuidv3-value
+	[InlineData("www.example.com", 5, "2ed6657d-e927-568b-95e1-2665a8aea6a2")] // https://www.rfc-editor.org/rfc/rfc9562#name-example-of-a-uuidv5-value
 	public void CreateGuidFromAsciiDnsName(string name, int version, string expected) =>
 		Assert.Equal(new Guid(expected), GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, Encoding.ASCII.GetBytes(name), version));
 
@@ -68,7 +68,7 @@ public class GuidHelpersTests
 		var timeLow = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(6)) & 0xFFFu;
 		var timestamp = (long) ((((ulong) timeHigh) << 28) | ((ulong) timeMid << 12) | timeLow);
 
-		// adjust epoch to Windows NT FILETIME (from get_system_time in https://datatracker.ietf.org/doc/html/rfc4122)
+		// adjust epoch to Windows NT FILETIME (from get_system_time in https://www.rfc-editor.org/rfc/rfc4122)
 		timestamp -=
 			(1000 * 1000 * 10L) // seconds
 		   * (60 * 60 * 24L) // days
@@ -81,7 +81,7 @@ public class GuidHelpersTests
 #if NET8_0_OR_GREATER
 	[Theory]
 	[InlineData("1998-02-04T22:13:53.151183Z", "1d19dad6-ba7b-6816")] // timestamp from the RFC 4122 example; see the date on this draft: https://datatracker.ietf.org/doc/html/draft-leach-uuids-guids-01
-	[InlineData("2022-02-22T14:22:22-05:00", "1ec9414c-232a-6b00")] // https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis-14#name-example-of-a-uuidv6-value
+	[InlineData("2022-02-22T14:22:22-05:00", "1ec9414c-232a-6b00")] // https://www.rfc-editor.org/rfc/rfc9562#name-example-of-a-uuidv6-value
 	public void CreateV6FromTimeProvider(string timestamp, string expectedPrefix)
 	{
 		var timeProvider = new FixedTimeProvider(DateTimeOffset.Parse(timestamp, System.Globalization.CultureInfo.InvariantCulture));
@@ -106,7 +106,7 @@ public class GuidHelpersTests
 
 #if NET8_0_OR_GREATER
 	[Theory]
-	[InlineData("2022-02-22T14:22:22-05:00", "017f22e2-79b0-7")] // https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis-14#name-example-of-a-uuidv7-value
+	[InlineData("2022-02-22T14:22:22-05:00", "017f22e2-79b0-7")] // https://www.rfc-editor.org/rfc/rfc9562#name-example-of-a-uuidv7-value
 	public void CreateV7FromTimeProvider(string timestamp, string expectedPrefix)
 	{
 		var timeProvider = new FixedTimeProvider(DateTimeOffset.Parse(timestamp, System.Globalization.CultureInfo.InvariantCulture));
@@ -176,7 +176,7 @@ public class GuidHelpersTests
 #endif
 
 	[Theory]
-	[InlineData("SHA256", "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "www.example.com", "5c146b14-3c52-8afd-938a-375d0df1fbf6")] // https://datatracker.ietf.org/doc/html/draft-ietf-uuidrev-rfc4122bis-14#name-example-of-a-uuidv8-value-n
+	[InlineData("SHA256", "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "www.example.com", "5c146b14-3c52-8afd-938a-375d0df1fbf6")] // https://www.rfc-editor.org/rfc/rfc9562#name-example-of-a-uuidv8-value-n
 	public void CreateV8FromName(string algorithmName, string namespaceId, string name, string expected) =>
 		Assert.Equal(new Guid(expected), GuidHelpers.CreateVersion8FromName(new(algorithmName), new(namespaceId), Encoding.ASCII.GetBytes(name)));
 
