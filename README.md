@@ -5,21 +5,21 @@
 
 ## About
 
-NGuid provides efficient creation of name-based and random GUIDs according to
+NGuid provides efficient creation of name-based, time-based, and random GUIDs according to
 [RFC 4122](https://datatracker.ietf.org/doc/html/rfc4122)
-and [RFC 9562](https://datatracker.ietf.org/doc/html/rfc9562)::
+and [RFC 9562](https://datatracker.ietf.org/doc/html/rfc9562):
 
-* Version 3 - created from an MD5 hash of a name
-* Version 5 - created from a SHA1 hash of a name
-* Version 6 - a field-compatible version of UUIDv1, reordered for improved DB locality
-* Version 7 - a time-ordered value based on a Unix timestamp
-* Version 8 - an RFC-compatible format for experimental or vendor-specific use cases
+* Version 3 ‒ created from an MD5 hash of a name
+* Version 5 ‒ created from a SHA1 hash of a name
+* Version 6 ‒ a field-compatible version of UUIDv1, reordered for improved DB locality
+* Version 7 ‒ a time-ordered value based on a Unix timestamp
+* Version 8 ‒ an RFC-compatible format for experimental or vendor-specific use cases
 
 ## Usage
 
 ```csharp
 // returns a "Version 5" UUID by default: {74738ff5-5367-5958-9aee-98fffdcd1876}
-var guid = GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.org"u8);
+var guidv5 = GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.org"u8);
 
 // can also create "Version 3": {0012416f-9eec-3ed4-a8b0-3bceecde1cd9}
 var guidv3 = GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.org"u8, version: 3);
