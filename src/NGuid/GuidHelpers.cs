@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -505,5 +504,5 @@ public static class GuidHelpers
 	}
 
 	// UUID v1 and v6 uses a count of 100-nanosecond intervals since 00:00:00.00 UTC, 15 October 1582
-	private static readonly DateTime s_gregorianEpoch = new DateTime(1582, 10, 15, 0, 0, 0, DateTimeKind.Utc);
+	private static readonly DateTime s_gregorianEpoch = new(1582, 10, 15, 0, 0, 0, DateTimeKind.Utc);
 }

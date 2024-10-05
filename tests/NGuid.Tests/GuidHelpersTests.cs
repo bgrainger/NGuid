@@ -146,7 +146,7 @@ public class GuidHelpersTests
 
 	[Fact]
 	public void CreateV8FromZeroBytes() =>
-		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion8(Array.Empty<byte>()));
+		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion8([]));
 
 	// https://github.com/dotnet/roslyn-analyzers/issues/6686
 	private static readonly byte[] s_bytes15 = new byte[15];
