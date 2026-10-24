@@ -13,12 +13,13 @@ permissions:
 
 jobs:
   report:
+    if: github.event.workflow_run.conclusion != 'cancelled'
     runs-on: ubuntu-latest
     steps:
     - name: Publish Test Results
       uses: dorny/test-reporter@v3
       with:
-        artifact: test-results
-        name: Xunit Tests
+        artifact: /test-results-(.*)/
+        name: Xunit Tests ($1)
         path: '*.trx'
         reporter: dotnet-trx

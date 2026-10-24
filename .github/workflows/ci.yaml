@@ -2,14 +2,24 @@ name: Continuous Integration
 
 on:
   push:
+    branches: [ master ]
+    tags: [ '*' ]
   pull_request:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ windows-latest, ubuntu-latest ]
+    runs-on: ${{ matrix.os }}
 
     steps:
     - name: Check out
@@ -25,6 +35,13 @@ jobs:
           9.0.x
         global-json-file: global.json
 
+    - name: Cache NuGet packages
+      uses: actions/cache@v6
+      with:
+        path: ~/.nuget/packages
+        key: nuget-${{ runner.os }}-${{ hashFiles('Directory.Packages.props', '**/*.csproj') }}
+        restore-keys: nuget-${{ runner.os }}-
+
     - name: Restore
       run: dotnet restore
 
@@ -38,13 +55,15 @@ jobs:
       uses: actions/upload-artifact@v7
       if: success() || failure()
       with:
-        name: test-results
+        name: test-results-${{ runner.os }}
         path: tests/NGuid.Tests/TestResults/*.trx
 
     - name: Pack
+      if: runner.os == 'Windows'
       run: dotnet pack --configuration Release --no-build
 
     - name: Upload NuGet Package
+      if: runner.os == 'Windows'
       uses: actions/upload-artifact@v7
       with:
         name: nuget
