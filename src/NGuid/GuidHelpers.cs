@@ -29,15 +29,16 @@ public static class GuidHelpers
 		if (name is null)
 			throw new ArgumentNullException(nameof(name));
 #endif
+		ValidateVersion(version);
 
 		// convert the name to a sequence of octets (as defined by the standard or conventions of its namespace) (step 3)
 		// ASSUME: UTF-8 encoding is always appropriate
 		// (invalid UTF-16 is rejected rather than replaced with U+FFFD so that different names can't produce the same UUID)
 #if NET6_0_OR_GREATER
-		Span<byte> nameBytes = name.Length < 500 ? stackalloc byte[name.Length * 3] : new byte[name.Length * 3];
+		int nameLength;
 		try
 		{
-			nameBytes = nameBytes[..s_strictUtf8.GetBytes(name.AsSpan(), nameBytes)];
+			nameLength = s_strictUtf8.GetByteCount(name);
 		}
 #else
 		byte[] nameBytes;
@@ -51,7 +52,14 @@ public static class GuidHelpers
 			throw new ArgumentException("The name cannot be converted to UTF-8.", nameof(name), ex);
 		}
 
+#if NET6_0_OR_GREATER
+		// encode the name directly into the buffer that will be hashed, after the space for the namespace ID
+		Span<byte> buffer = nameLength < 500 ? stackalloc byte[16 + nameLength + 20] : new byte[16 + nameLength + 20];
+		s_strictUtf8.GetBytes(name.AsSpan(), buffer[16..^20]);
+		return CreateFromNameBuffer(namespaceId, buffer, version);
+#else
 		return CreateFromName(namespaceId, nameBytes, version);
+#endif
 	}
 
 	/// <summary>
@@ -70,8 +78,7 @@ public static class GuidHelpers
 #else
 		if (name is null)
 			throw new ArgumentNullException(nameof(name));
-		if (version is not (3 or 5))
-			throw new ArgumentOutOfRangeException(nameof(version), version, "version must be either 3 or 5.");
+		ValidateVersion(version);
 
 		// convert the namespace UUID to network order (step 3)
 		var namespaceBytes = namespaceId.ToByteArray();
@@ -116,11 +123,17 @@ public static class GuidHelpers
 	public static Guid CreateFromName(Guid namespaceId, ReadOnlySpan<byte> name, int version = 5)
 	{
 		// see https://github.com/LogosBible/Logos.Utility/blob/master/src/Logos.Utility/GuidUtility.cs and https://faithlife.codes/blog/2011/04/generating_a_deterministic_guid/ for the original version of this code
-		if (version is not (3 or 5))
-			throw new ArgumentOutOfRangeException(nameof(version), version, "version must be either 3 or 5.");
+		ValidateVersion(version);
 
-		// convert the namespace UUID to network order (step 3)
 		Span<byte> buffer = name.Length < 500 ? stackalloc byte[16 + name.Length + 20] : new byte[16 + name.Length + 20];
+		name.CopyTo(buffer[16..]);
+		return CreateFromNameBuffer(namespaceId, buffer, version);
+	}
+
+	// Creates a name-based UUID from 'buffer', which holds 16 bytes of space for the namespace ID, then the name, then 20 bytes of space for the hash.
+	private static Guid CreateFromNameBuffer(Guid namespaceId, Span<byte> buffer, int version)
+	{
+		// convert the namespace UUID to network order (step 3)
 #if NET8_0_OR_GREATER
 		if (!namespaceId.TryWriteBytes(buffer, bigEndian: true, out _))
 			throw new InvalidOperationException("Failed to write namespace ID bytes to buffer");
@@ -133,7 +146,6 @@ public static class GuidHelpers
 		// compute the hash of the namespace ID concatenated with the name (step 4)
 #pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms
 #pragma warning disable CA5351 // Do Not Use Broken Cryptographic Algorithms
-		name.CopyTo(buffer[16..]);
 		var success = version == 3
 			? MD5.TryHashData(buffer[..^20], buffer[^20..], out var bytesWritten)
 			: SHA1.TryHashData(buffer[..^20], buffer[^20..], out bytesWritten);
@@ -533,6 +545,12 @@ public static class GuidHelpers
 	/// The namespace for ISO OIDs (from RFC 4122, Appendix C).
 	/// </summary>
 	public static readonly Guid IsoOidNamespace = new("6ba7b812-9dad-11d1-80b4-00c04fd430c8");
+
+	private static void ValidateVersion(int version)
+	{
+		if (version is not (3 or 5))
+			throw new ArgumentOutOfRangeException(nameof(version), version, "version must be either 3 or 5.");
+	}
 
 #if !NET8_0_OR_GREATER
 	// Converts a GUID (expressed as a byte array) to/from network order (MSB-first).

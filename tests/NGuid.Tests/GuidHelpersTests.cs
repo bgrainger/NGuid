@@ -35,6 +35,19 @@ public class GuidHelpersTests
 	public void CreateGuidFromAsciiDnsName(string name, int version, string expected) =>
 		Assert.Equal(new Guid(expected), GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, Encoding.ASCII.GetBytes(name), version));
 
+	[Theory]
+	[InlineData('a', 499, 5, "fe28ecad-d700-53fa-8e37-d9ec8e9d58c7")]
+	[InlineData('a', 500, 5, "23d604e2-7664-5f66-afd0-33691bed5b76")]
+	[InlineData('a', 600, 3, "2c7ed2e9-cb86-36a3-91ee-ed34af08b949")]
+	[InlineData('a', 600, 5, "3ac74f5b-7542-5321-9815-1c5246f96e15")]
+	[InlineData('é', 300, 5, "da50c6e4-b4bf-5a5a-8c35-cbda4ab06c5d")] // 600 bytes of UTF-8
+	public void CreateGuidFromLongName(char ch, int count, int version, string expected)
+	{
+		var name = new string(ch, count);
+		Assert.Equal(new Guid(expected), GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, name, version));
+		Assert.Equal(new Guid(expected), GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, Encoding.UTF8.GetBytes(name), version));
+	}
+
 	[Fact]
 	public void CreateNullName()
 	{
@@ -68,6 +81,14 @@ public class GuidHelpersTests
 	public void CreateInvalidVersion()
 	{
 		var ex = Assert.Throws<ArgumentOutOfRangeException>(() => GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.com", 4));
+		Assert.Equal("version", ex.ParamName);
+	}
+
+	[Fact]
+	public void CreateInvalidVersionChecksVersionBeforeName()
+	{
+		// the version is validated before the name is encoded
+		var ex = Assert.Throws<ArgumentOutOfRangeException>(() => GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "\uD800", 4));
 		Assert.Equal("version", ex.ParamName);
 	}
 
