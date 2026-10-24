@@ -100,10 +100,21 @@ public class GuidHelpersTests
 		Assert.Equal("version", ex.ParamName);
 	}
 
+	[Fact]
+	public void NamespaceIds()
+	{
+		// https://www.rfc-editor.org/rfc/rfc9562#name-namespace-id-usage-and-allo
+		Assert.Equal(new Guid("6ba7b810-9dad-11d1-80b4-00c04fd430c8"), GuidHelpers.DnsNamespace);
+		Assert.Equal(new Guid("6ba7b811-9dad-11d1-80b4-00c04fd430c8"), GuidHelpers.UrlNamespace);
+		Assert.Equal(new Guid("6ba7b812-9dad-11d1-80b4-00c04fd430c8"), GuidHelpers.IsoOidNamespace);
+		Assert.Equal(new Guid("6ba7b814-9dad-11d1-80b4-00c04fd430c8"), GuidHelpers.X500Namespace);
+	}
+
 	[Theory]
 	[InlineData("6ba7b810-9dad-11d1-80b4-00c04fd430c8", "1d19dad6-ba7b-6810-80b4-00c04fd430c8")] // DnsNamespace
 	[InlineData("6ba7b811-9dad-11d1-80b4-00c04fd430c8", "1d19dad6-ba7b-6811-80b4-00c04fd430c8")] // UrlNamespace
 	[InlineData("6ba7b812-9dad-11d1-80b4-00c04fd430c8", "1d19dad6-ba7b-6812-80b4-00c04fd430c8")] // IsoOidNamespace
+	[InlineData("6ba7b814-9dad-11d1-80b4-00c04fd430c8", "1d19dad6-ba7b-6814-80b4-00c04fd430c8")] // X500Namespace
 	public void ConvertV1ToV6(string input, string expected) =>
 		Assert.Equal(new Guid(expected), GuidHelpers.CreateVersion6FromVersion1(new Guid(input)));
 

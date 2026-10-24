@@ -10,7 +10,7 @@ namespace NGuid;
 public static class GuidHelpers
 {
 	/// <summary>
-	/// Creates a name-based UUID using the algorithm from <a href="https://www.rfc-editor.org/rfc/rfc4122#section-4.3">RFC 4122 §4.3</a>.
+	/// Creates a name-based UUID using the algorithm from <a href="https://www.rfc-editor.org/rfc/rfc9562#name-name-based-uuid-generation">RFC 9562, section 6.5</a>.
 	/// </summary>
 	/// <param name="namespaceId">The ID of the namespace.</param>
 	/// <param name="name">The name (within that namespace). This string will be converted to UTF-8
@@ -63,7 +63,7 @@ public static class GuidHelpers
 	}
 
 	/// <summary>
-	/// Creates a name-based UUID using the algorithm from <a href="https://www.rfc-editor.org/rfc/rfc4122#section-4.3">RFC 4122 §4.3</a>.
+	/// Creates a name-based UUID using the algorithm from <a href="https://www.rfc-editor.org/rfc/rfc9562#name-name-based-uuid-generation">RFC 9562, section 6.5</a>.
 	/// </summary>
 	/// <param name="namespaceId">The ID of the namespace.</param>
 	/// <param name="name">The name (within that namespace).</param>
@@ -115,7 +115,7 @@ public static class GuidHelpers
 	}
 
 	/// <summary>
-	/// Creates a name-based UUID using the algorithm from <a href="https://www.rfc-editor.org/rfc/rfc4122#section-4.3">RFC 4122 §4.3</a>.
+	/// Creates a name-based UUID using the algorithm from <a href="https://www.rfc-editor.org/rfc/rfc9562#name-name-based-uuid-generation">RFC 9562, section 6.5</a>.
 	/// </summary>
 	/// <param name="namespaceId">The ID of the namespace.</param>
 	/// <param name="name">The name (within that namespace).</param>
@@ -549,19 +549,24 @@ public static class GuidHelpers
 #endif
 
 	/// <summary>
-	/// The namespace for fully-qualified domain names (from RFC 4122, Appendix C).
+	/// The namespace for fully-qualified domain names (from RFC 9562, Section 6.6).
 	/// </summary>
 	public static readonly Guid DnsNamespace = new("6ba7b810-9dad-11d1-80b4-00c04fd430c8");
 
 	/// <summary>
-	/// The namespace for URLs (from RFC 4122, Appendix C).
+	/// The namespace for URLs (from RFC 9562, Section 6.6).
 	/// </summary>
 	public static readonly Guid UrlNamespace = new("6ba7b811-9dad-11d1-80b4-00c04fd430c8");
 
 	/// <summary>
-	/// The namespace for ISO OIDs (from RFC 4122, Appendix C).
+	/// The namespace for ISO OIDs (from RFC 9562, Section 6.6).
 	/// </summary>
 	public static readonly Guid IsoOidNamespace = new("6ba7b812-9dad-11d1-80b4-00c04fd430c8");
+
+	/// <summary>
+	/// The namespace for X.500 distinguished names (from RFC 9562, Section 6.6).
+	/// </summary>
+	public static readonly Guid X500Namespace = new("6ba7b814-9dad-11d1-80b4-00c04fd430c8");
 
 	private static void ValidateVersion(int version)
 	{
