@@ -19,10 +19,13 @@ and [RFC 9562](https://www.rfc-editor.org/rfc/rfc9562):
 
 ```csharp
 // returns a "Version 5" UUID by default: {74738ff5-5367-5958-9aee-98fffdcd1876}
-var guidv5 = GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.org"u8);
+var guidv5 = GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.org");
 
 // can also create "Version 3": {0012416f-9eec-3ed4-a8b0-3bceecde1cd9}
-var guidv3 = GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.org"u8, version: 3);
+var guidv3 = GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.org", version: 3);
+
+// .NET 6+: names can also be UTF-8 bytes, e.g., a u8 literal
+var guidv5FromUtf8 = GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.org"u8);
 
 // converts {6ba7b810-9dad-11d1-80b4-00c04fd430c8} to {1d19dad6-ba7b-6810-80b4-00c04fd430c8}
 var guidv6 = GuidHelpers.CreateVersion6FromVersion1(GuidHelpers.DnsNamespace);
@@ -30,7 +33,7 @@ var guidv6 = GuidHelpers.CreateVersion6FromVersion1(GuidHelpers.DnsNamespace);
 // creates a v7 GUID using the current time and random data
 var guidv7 = GuidHelpers.CreateVersion7();
 
-// .NET 8 only: specify a TimeProvider to provide the timestamp
+// .NET 8+: specify a TimeProvider to provide the timestamp
 var guidv7WithTime = GuidHelpers.CreateVersion7(TimeProvider.System);
 
 // creates a v8 GUID using the specified data
