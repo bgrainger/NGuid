@@ -53,8 +53,11 @@ public static class GuidHelpers
 	public static Guid CreateFromName(Guid namespaceId, byte[] name, int version = 5)
 	{
 #if NET6_0_OR_GREATER
+		ArgumentNullException.ThrowIfNull(name);
 		return CreateFromName(namespaceId, name.AsSpan(), version);
 #else
+		if (name is null)
+			throw new ArgumentNullException(nameof(name));
 		if (version is not (3 or 5))
 			throw new ArgumentOutOfRangeException(nameof(version), version, "version must be either 3 or 5.");
 
@@ -388,8 +391,11 @@ public static class GuidHelpers
 	public static Guid CreateVersion8FromName(HashAlgorithmName hashAlgorithmName, Guid namespaceId, byte[] name)
 	{
 #if NET6_0_OR_GREATER
+		ArgumentNullException.ThrowIfNull(name);
 		return CreateVersion8FromName(hashAlgorithmName, namespaceId, name.AsSpan());
 #else
+		if (name is null)
+			throw new ArgumentNullException(nameof(name));
 		using var algorithm = GetHashAlgorithm(hashAlgorithmName);
 
 		// add the namespace bytes (in network order) to the hash

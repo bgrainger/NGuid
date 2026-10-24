@@ -42,6 +42,13 @@ public class GuidHelpersTests
 	}
 
 	[Fact]
+	public void CreateNullNameBytes()
+	{
+		var ex = Assert.Throws<ArgumentNullException>(() => GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, default(byte[])!));
+		Assert.Equal("name", ex.ParamName);
+	}
+
+	[Fact]
 	public void CreateInvalidVersion()
 	{
 		var ex = Assert.Throws<ArgumentOutOfRangeException>(() => GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.com", 4));
@@ -179,6 +186,13 @@ public class GuidHelpersTests
 	[InlineData("SHA256", "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "www.example.com", "5c146b14-3c52-8afd-938a-375d0df1fbf6")] // https://www.rfc-editor.org/rfc/rfc9562#name-example-of-a-uuidv8-value-n
 	public void CreateV8FromName(string algorithmName, string namespaceId, string name, string expected) =>
 		Assert.Equal(new Guid(expected), GuidHelpers.CreateVersion8FromName(new(algorithmName), new(namespaceId), Encoding.ASCII.GetBytes(name)));
+
+	[Fact]
+	public void CreateV8FromNullName()
+	{
+		var ex = Assert.Throws<ArgumentNullException>(() => GuidHelpers.CreateVersion8FromName(new("SHA256"), GuidHelpers.DnsNamespace, default(byte[])!));
+		Assert.Equal("name", ex.ParamName);
+	}
 
 #if NET8_0_OR_GREATER
 	private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider

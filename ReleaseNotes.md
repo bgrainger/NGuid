@@ -1,5 +1,10 @@
 # Release Notes
 
+## Pending
+
+* Throw `ArgumentNullException` for a null `byte[]` name; .NET 6+ previously hashed it as an empty name.
+* Update `System.Memory` dependency to 4.6.3.
+
 ## 1.0.0
 
 * Update to RFC 9562. (There are no changes from Version 14 of the RFC draft.)
