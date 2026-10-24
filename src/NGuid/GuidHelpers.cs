@@ -198,8 +198,9 @@ public static class GuidHelpers
 		rng.GetBytes(bytes);
 #endif
 
+		// "implementations MUST set the least significant bit of the first octet of the Node ID to 1" (RFC 9562 section 6.10)
 		return new Guid(timeHigh, timeMid, timeLow,
-			(byte) (bytes[0] & 0x3F | 0x80), bytes[1], bytes[2], bytes[3],
+			(byte) (bytes[0] & 0x3F | 0x80), bytes[1], (byte) (bytes[2] | 0x01), bytes[3],
 			bytes[4], bytes[5], bytes[6], bytes[7]);
 	}
 

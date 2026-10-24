@@ -86,6 +86,14 @@ public class GuidHelpersTests
 		Assert.InRange(extractedDateTime, start, end);
 	}
 
+	[Fact]
+	public void CreateV6SetsMulticastBit()
+	{
+		// the node ID is random, so check enough UUIDs that a missing bit can't go unnoticed by chance
+		for (var i = 0; i < 100; i++)
+			Assert.Equal(1, GuidHelpers.CreateVersion6().ToByteArray()[10] & 0x01);
+	}
+
 #if NET8_0_OR_GREATER
 	[Theory]
 	[InlineData("1998-02-04T22:13:53.151183Z", "1d19dad6-ba7b-6816")] // timestamp from the RFC 4122 example; see the date on this draft: https://datatracker.ietf.org/doc/html/draft-leach-uuids-guids-01
