@@ -7,15 +7,16 @@ on:
       - completed
 
 permissions:
+  actions: read
   checks: write
-  statuses: write
+  contents: read
 
 jobs:
   report:
     runs-on: ubuntu-latest
     steps:
     - name: Publish Test Results
-      uses: dorny/test-reporter@v1.9.1
+      uses: dorny/test-reporter@v3
       with:
         artifact: test-results
         name: Xunit Tests

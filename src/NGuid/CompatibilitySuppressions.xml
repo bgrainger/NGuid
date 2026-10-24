@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:NGuid.GuidHelpers.CreateVersion6(System.TimeProvider)</Target>
+    <Left>lib/net6.0/NGuid.dll</Left>
+    <Right>lib/net8.0/NGuid.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:NGuid.GuidHelpers.CreateVersion7(System.TimeProvider)</Target>
+    <Left>lib/net6.0/NGuid.dll</Left>
+    <Right>lib/net8.0/NGuid.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:NGuid.GuidHelpers.CreateFromName(System.Guid,System.ReadOnlySpan{System.Byte},System.Int32)</Target>
+    <Left>lib/netstandard2.0/NGuid.dll</Left>
+    <Right>lib/net6.0/NGuid.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:NGuid.GuidHelpers.CreateVersion8(System.ReadOnlySpan{System.Byte})</Target>
+    <Left>lib/netstandard2.0/NGuid.dll</Left>
+    <Right>lib/net6.0/NGuid.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:NGuid.GuidHelpers.CreateVersion8FromName(System.Security.Cryptography.HashAlgorithmName,System.Guid,System.ReadOnlySpan{System.Byte})</Target>
+    <Left>lib/netstandard2.0/NGuid.dll</Left>
+    <Right>lib/net6.0/NGuid.dll</Right>
+  </Suppression>
+</Suppressions>

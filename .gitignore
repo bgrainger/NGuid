@@ -1,8 +1,10 @@
 .vs/
 .idea/
+artifacts/
 bin/
 obj/
 release/
+TestResults/
 
 *.cache
 *.log

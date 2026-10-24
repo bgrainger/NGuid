@@ -119,9 +119,9 @@ public static class GuidHelpers
 #pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms
 #pragma warning disable CA5351 // Do Not Use Broken Cryptographic Algorithms
 		name.CopyTo(buffer[16..]);
-		var success = version == 3 ?
-			MD5.TryHashData(buffer[..^20], buffer[^20..], out var bytesWritten) :
-			SHA1.TryHashData(buffer[..^20], buffer[^20..], out bytesWritten);
+		var success = version == 3
+			? MD5.TryHashData(buffer[..^20], buffer[^20..], out var bytesWritten)
+			: SHA1.TryHashData(buffer[..^20], buffer[^20..], out bytesWritten);
 		if (!success || bytesWritten < 16)
 			throw new InvalidOperationException("Failed to hash data");
 #pragma warning restore CA5351 // Do Not Use Broken Cryptographic Algorithms
