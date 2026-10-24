@@ -165,6 +165,9 @@ public static class GuidHelpers
 	/// Creates a new Version 6 UUID based on the current time and a random node ID.
 	/// </summary>
 	/// <returns>A new Version 6 UUID based on the current time and a random node ID.</returns>
+	/// <remarks>UUIDs are ordered by their timestamp, which has 100-nanosecond precision but is limited by the
+	/// resolution of the system clock (as coarse as 1 to 16 milliseconds on .NET Framework). UUIDs created within the
+	/// same clock tick, or after the system clock moves backwards, are not guaranteed to sort in the order they were created.</remarks>
 	public static Guid CreateVersion6() =>
 		CreateVersion6(DateTimeOffset.UtcNow, paramName: null);
 
@@ -174,6 +177,8 @@ public static class GuidHelpers
 	/// </summary>
 	/// <param name="timeProvider">A <see cref="TimeProvider"/> that can provide the current UTC time.</param>
 	/// <returns>A new Version 6 UUID based on the specified time and a random node ID.</returns>
+	/// <remarks>UUIDs are ordered by their 100-nanosecond timestamp. UUIDs created from the same timestamp, or after
+	/// <paramref name="timeProvider"/> returns an earlier time, are not guaranteed to sort in the order they were created.</remarks>
 	public static Guid CreateVersion6(TimeProvider timeProvider)
 	{
 		ArgumentNullException.ThrowIfNull(timeProvider);
@@ -267,6 +272,8 @@ public static class GuidHelpers
 	/// Creates a new Version 7 UUID based on the current time combined with random data.
 	/// </summary>
 	/// <returns>A new Version 7 UUID based on the current time and random data.</returns>
+	/// <remarks>UUIDs are ordered by their millisecond timestamp. UUIDs created within the same millisecond, or after
+	/// the system clock moves backwards, are not guaranteed to sort in the order they were created.</remarks>
 	public static Guid CreateVersion7() =>
 		CreateVersion7(DateTimeOffset.UtcNow, paramName: null);
 
@@ -276,6 +283,8 @@ public static class GuidHelpers
 	/// </summary>
 	/// <param name="timeProvider">A <see cref="TimeProvider"/> that can provide the current UTC time.</param>
 	/// <returns>A new Version 7 UUID based on the specified time and random data.</returns>
+	/// <remarks>UUIDs are ordered by their millisecond timestamp. UUIDs created within the same millisecond, or after
+	/// <paramref name="timeProvider"/> returns an earlier time, are not guaranteed to sort in the order they were created.</remarks>
 	public static Guid CreateVersion7(TimeProvider timeProvider)
 	{
 		ArgumentNullException.ThrowIfNull(timeProvider);
