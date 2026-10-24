@@ -9,6 +9,7 @@
 * `CreateVersion6FromVersion1` rejects GUIDs that don't have the RFC 9562 variant.
 * `CreateVersion6` rejects timestamps after 5236 instead of wrapping; out-of-range errors from the `TimeProvider` overloads name the `timeProvider` parameter.
 * `CreateFromName` throws `ArgumentException` for a `string` name with unpaired surrogates instead of replacing them with U+FFFD.
+* The `ReadOnlySpan<byte>` overloads of `CreateFromName`, `CreateVersion8`, and `CreateVersion8FromName` are available on .NET Standard 2.0.
 
 ## 1.0.0
 

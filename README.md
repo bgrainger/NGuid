@@ -24,7 +24,7 @@ var guidv5 = GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.o
 // can also create "Version 3": {0012416f-9eec-3ed4-a8b0-3bceecde1cd9}
 var guidv3 = GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.org", version: 3);
 
-// .NET 6+: names can also be UTF-8 bytes, e.g., a u8 literal
+// names can also be UTF-8 bytes, e.g., a u8 literal (C# 11+)
 var guidv5FromUtf8 = GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.org"u8);
 
 // converts {6ba7b810-9dad-11d1-80b4-00c04fd430c8} to {1d19dad6-ba7b-6810-80b4-00c04fd430c8}

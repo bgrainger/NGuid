@@ -246,7 +246,6 @@ public class GuidHelpersTests
 	public void CreateV8FromNewArray() =>
 		Assert.Equal(new Guid("00000000-0000-8000-8000-000000000000"), GuidHelpers.CreateVersion8(s_bytes32));
 
-#if NET8_0_OR_GREATER
 	[Fact]
 	public void CreateV8FromEmptySpan() =>
 		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion8([]));
@@ -258,7 +257,10 @@ public class GuidHelpersTests
 	[Fact]
 	public void CreateV8FromNewSpan() =>
 		Assert.Equal(new Guid("00000000-0000-8000-8000-000000000000"), GuidHelpers.CreateVersion8(stackalloc byte[32]));
-#endif
+
+	[Fact]
+	public void CreateV8FromSpan() =>
+		Assert.Equal(new Guid("00112233-4455-8677-8899-aabbccddeeff"), GuidHelpers.CreateVersion8([0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF]));
 
 	[Theory]
 	[InlineData("SHA256", "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "www.example.com", "5c146b14-3c52-8afd-938a-375d0df1fbf6")] // https://www.rfc-editor.org/rfc/rfc9562#name-example-of-a-uuidv8-value-n
@@ -300,6 +302,13 @@ public class GuidHelpersTests
 	{
 		var ex = Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion8FromName(new(algorithmName), GuidHelpers.DnsNamespace, Encoding.ASCII.GetBytes("www.example.com")));
 		Assert.Equal("hashAlgorithmName", ex.ParamName);
+	}
+
+	[Fact]
+	public void CreateFromUtf8Name()
+	{
+		Assert.Equal(new Guid("2ed6657d-e927-568b-95e1-2665a8aea6a2"), GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.com"u8));
+		Assert.Equal(new Guid("5c146b14-3c52-8afd-938a-375d0df1fbf6"), GuidHelpers.CreateVersion8FromName(HashAlgorithmName.SHA256, GuidHelpers.DnsNamespace, "www.example.com"u8));
 	}
 
 	[Fact]

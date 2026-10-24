@@ -110,7 +110,6 @@ public static class GuidHelpers
 #endif
 	}
 
-#if NET6_0_OR_GREATER
 	/// <summary>
 	/// Creates a name-based UUID using the algorithm from <a href="https://www.rfc-editor.org/rfc/rfc4122#section-4.3">RFC 4122 §4.3</a>.
 	/// </summary>
@@ -119,17 +118,24 @@ public static class GuidHelpers
 	/// <param name="version">The version number of the UUID to create; this value must be either
 	/// 3 (for MD5 hashing) or 5 (for SHA-1 hashing).</param>
 	/// <returns>A UUID derived from the namespace and name.</returns>
+#if NET6_0_OR_GREATER
 	[SkipLocalsInit]
+#endif
 	public static Guid CreateFromName(Guid namespaceId, ReadOnlySpan<byte> name, int version = 5)
 	{
 		// see https://github.com/LogosBible/Logos.Utility/blob/master/src/Logos.Utility/GuidUtility.cs and https://faithlife.codes/blog/2011/04/generating_a_deterministic_guid/ for the original version of this code
 		ValidateVersion(version);
 
+#if NET6_0_OR_GREATER
 		Span<byte> buffer = name.Length < 500 ? stackalloc byte[16 + name.Length + 20] : new byte[16 + name.Length + 20];
 		name.CopyTo(buffer[16..]);
 		return CreateFromNameBuffer(namespaceId, buffer, version);
+#else
+		return CreateFromName(namespaceId, name.ToArray(), version);
+#endif
 	}
 
+#if NET6_0_OR_GREATER
 	// Creates a name-based UUID from 'buffer', which holds 16 bytes of space for the namespace ID, then the name, then 20 bytes of space for the hash.
 	private static Guid CreateFromNameBuffer(Guid namespaceId, Span<byte> buffer, int version)
 	{
@@ -379,7 +385,6 @@ public static class GuidHelpers
 #endif
 	}
 
-#if NET6_0_OR_GREATER
 	/// <summary>
 	/// Creates a Version 8 UUID from the first 16 bytes of the specified input. Those bytes are copied to the returned
 	/// <see cref="Guid"/> except for the reserved <c>version</c> and <c>variant</c> bits, which are set to 8
@@ -393,12 +398,15 @@ public static class GuidHelpers
 	/// so <see cref="Guid.ToByteArray()"/> returns each of the first three groups of bytes (4, 2, and 2 bytes) in reverse
 	/// order compared to <paramref name="bytes"/>; the last 8 bytes are unchanged.
 	/// </remarks>
+#if NET6_0_OR_GREATER
 	[SkipLocalsInit]
+#endif
 	public static Guid CreateVersion8(ReadOnlySpan<byte> bytes)
 	{
 		if (bytes.Length < 16)
 			throw new ArgumentException("At least sixteen bytes must be provided", nameof(bytes));
 
+#if NET6_0_OR_GREATER
 		// make a copy of the bytes
 		Span<byte> guidBytes = stackalloc byte[16];
 		bytes[..16].CopyTo(guidBytes);
@@ -414,8 +422,10 @@ public static class GuidHelpers
 		SwapByteOrder(guidBytes);
 		return new Guid(guidBytes);
 #endif
-	}
+#else
+		return CreateVersion8(bytes.Slice(0, 16).ToArray());
 #endif
+	}
 
 	/// <summary>
 	/// Creates a Version 8 UUID from a name in the specified namespace using the specified hash algorithm, according to the algorithm
@@ -458,7 +468,6 @@ public static class GuidHelpers
 #endif
 	}
 
-#if NET6_0_OR_GREATER
 	/// <summary>
 	/// Creates a Version 8 UUID from a name in the specified namespace using the specified hash algorithm, according to the algorithm
 	/// in <a href="https://www.rfc-editor.org/rfc/rfc9562#name-name-based-uuid-generation">RFC 9562, section 6.5</a>.
@@ -468,9 +477,12 @@ public static class GuidHelpers
 	/// <param name="namespaceId">The namespace ID.</param>
 	/// <param name="name">The name within that namespace ID.</param>
 	/// <returns>A version 8 UUID formed by hashing the namespace ID and name.</returns>
+#if NET6_0_OR_GREATER
 	[SkipLocalsInit]
+#endif
 	public static Guid CreateVersion8FromName(HashAlgorithmName hashAlgorithmName, Guid namespaceId, ReadOnlySpan<byte> name)
 	{
+#if NET6_0_OR_GREATER
 		HashData hashData = hashAlgorithmName.Name switch
 		{
 			"SHA256" => SHA256.HashData,
@@ -515,8 +527,10 @@ public static class GuidHelpers
 		SwapByteOrder(newGuid);
 		return new Guid(newGuid);
 #endif
-	}
+#else
+		return CreateVersion8FromName(hashAlgorithmName, namespaceId, name.ToArray());
 #endif
+	}
 
 #if NET6_0_OR_GREATER
 	private delegate int HashData(ReadOnlySpan<byte> source, Span<byte> destination);

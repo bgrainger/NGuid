@@ -13,22 +13,4 @@
     <Left>lib/net6.0/NGuid.dll</Left>
     <Right>lib/net8.0/NGuid.dll</Right>
   </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:NGuid.GuidHelpers.CreateFromName(System.Guid,System.ReadOnlySpan{System.Byte},System.Int32)</Target>
-    <Left>lib/netstandard2.0/NGuid.dll</Left>
-    <Right>lib/net6.0/NGuid.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:NGuid.GuidHelpers.CreateVersion8(System.ReadOnlySpan{System.Byte})</Target>
-    <Left>lib/netstandard2.0/NGuid.dll</Left>
-    <Right>lib/net6.0/NGuid.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:NGuid.GuidHelpers.CreateVersion8FromName(System.Security.Cryptography.HashAlgorithmName,System.Guid,System.ReadOnlySpan{System.Byte})</Target>
-    <Left>lib/netstandard2.0/NGuid.dll</Left>
-    <Right>lib/net6.0/NGuid.dll</Right>
-  </Suppression>
 </Suppressions>
