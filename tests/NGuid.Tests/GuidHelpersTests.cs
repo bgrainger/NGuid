@@ -6,6 +6,7 @@ namespace NGuid.Tests;
 
 public class GuidHelpersTests
 {
+#if !NET8_0_OR_GREATER
 	[Fact]
 	public void SwapByteOrder()
 	{
@@ -13,17 +14,16 @@ public class GuidHelpersTests
 		var bytes = guid.ToByteArray();
 		Assert.Equal([4, 3, 2, 1, 6, 5, 8, 7, 9, 10, 11, 12, 13, 14, 15, 16], bytes);
 
-#if !NET8_0_OR_GREATER
 		GuidHelpers.SwapByteOrder(bytes);
 		Assert.Equal([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], bytes);
-#endif
 	}
+#endif
 
 	[Theory]
-	[InlineData("www.widgets.com", 3, "3d813cbb-47fb-32ba-91df-831e1593ac29" /*, TestDisplayName = "RFC 4122 Appendix B, as updated by http://www.rfc-editor.org/errata_search.php?rfc=4122" */)]
-	[InlineData("www.widgets.com", 5, "21f7f8de-8051-5b89-8680-0195ef798b6a" /*, TestDisplayName = "Boost Test Suite https://github.com/boostorg/uuid/blob/2bc0c8e71677f387afdc09bc4f8d609d2c74e80e/test/test_generators.cpp#L85C25-L85C121" */)]
-	[InlineData("python.org", 3, "6fa459ea-ee8a-3ca4-894e-db77e160355e" /*, TestDisplayName = "Python implementation (http://docs.python.org/library/uuid.html#uuid-example)" */)]
-	[InlineData("python.org", 5, "886313e1-3b8a-5372-9b90-0c9aee199e5d" /*, TestDisplayName = "Python implementation (http://docs.python.org/library/uuid.html#uuid-example)" */)]
+	[InlineData("www.widgets.com", 3, "3d813cbb-47fb-32ba-91df-831e1593ac29")] // RFC 4122 Appendix B, as updated by http://www.rfc-editor.org/errata_search.php?rfc=4122
+	[InlineData("www.widgets.com", 5, "21f7f8de-8051-5b89-8680-0195ef798b6a")] // Boost Test Suite https://github.com/boostorg/uuid/blob/2bc0c8e71677f387afdc09bc4f8d609d2c74e80e/test/test_generators.cpp#L85C25-L85C121
+	[InlineData("python.org", 3, "6fa459ea-ee8a-3ca4-894e-db77e160355e")] // Python implementation (http://docs.python.org/library/uuid.html#uuid-example)
+	[InlineData("python.org", 5, "886313e1-3b8a-5372-9b90-0c9aee199e5d")] // Python implementation (http://docs.python.org/library/uuid.html#uuid-example)
 	public void CreateGuidFromDnsName(string name, int version, string expected) =>
 		Assert.Equal(new Guid(expected), GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, name, version));
 
@@ -139,6 +139,10 @@ public class GuidHelpersTests
 
 		var extractedDateTime = DateTime.FromFileTimeUtc(timestamp);
 		Assert.InRange(extractedDateTime, start, end);
+
+		// check the version (6) and variant (0b10) bits
+		Assert.Equal(0x60, bytes[7] & 0xF0);
+		Assert.Equal(0x80, bytes[8] & 0xC0);
 	}
 
 	[Fact]
@@ -191,6 +195,10 @@ public class GuidHelpersTests
 		var timeLow = BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(4));
 		var extractedTime = (long) ((((ulong) timeHigh) << 16) | timeLow);
 		Assert.InRange(extractedTime, start, end);
+
+		// check the version (7) and variant (0b10) bits
+		Assert.Equal(0x70, bytes[7] & 0xF0);
+		Assert.Equal(0x80, bytes[8] & 0xC0);
 	}
 
 #if NET8_0_OR_GREATER
@@ -251,7 +259,7 @@ public class GuidHelpersTests
 
 	[Fact]
 	public void CreateV8FromZeroBytes() =>
-		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion8([]));
+		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion8(Array.Empty<byte>()));
 
 	// https://github.com/dotnet/roslyn-analyzers/issues/6686
 	private static readonly byte[] s_bytes15 = new byte[15];
