@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace NGuid.Tests;
@@ -184,8 +185,45 @@ public class GuidHelpersTests
 
 	[Theory]
 	[InlineData("SHA256", "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "www.example.com", "5c146b14-3c52-8afd-938a-375d0df1fbf6")] // https://www.rfc-editor.org/rfc/rfc9562#name-example-of-a-uuidv8-value-n
+	[InlineData("SHA384", "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "www.example.com", "3df00ae4-42a7-8066-88ad-1f925b8b8e54")]
+	[InlineData("SHA512", "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "www.example.com", "94ee4ddb-9f36-8018-9ccf-86a4441691e0")]
 	public void CreateV8FromName(string algorithmName, string namespaceId, string name, string expected) =>
 		Assert.Equal(new Guid(expected), GuidHelpers.CreateVersion8FromName(new(algorithmName), new(namespaceId), Encoding.ASCII.GetBytes(name)));
+
+#if NET8_0_OR_GREATER
+	[Theory]
+	[InlineData("SHA3-256", "fc506eca-a1f4-8315-87c8-c71449dfd324")]
+	[InlineData("SHA3-384", "ab4f9412-4e4c-87a5-be26-dc72f9adf6ed")]
+	[InlineData("SHA3-512", "83120d41-2935-8110-964c-6bd77c735fbc")]
+	public void CreateV8FromNameWithSha3(string algorithmName, string expected)
+	{
+		var isSupported = algorithmName switch
+		{
+			"SHA3-256" => SHA3_256.IsSupported,
+			"SHA3-384" => SHA3_384.IsSupported,
+			_ => SHA3_512.IsSupported,
+		};
+		var name = Encoding.ASCII.GetBytes("www.example.com");
+		if (isSupported)
+			Assert.Equal(new Guid(expected), GuidHelpers.CreateVersion8FromName(new(algorithmName), GuidHelpers.DnsNamespace, name));
+		else
+			Assert.Throws<PlatformNotSupportedException>(() => GuidHelpers.CreateVersion8FromName(new(algorithmName), GuidHelpers.DnsNamespace, name));
+	}
+#endif
+
+	[Theory]
+	[InlineData("MD5")]
+	[InlineData("SHA1")]
+	[InlineData("sha256")]
+	[InlineData("")]
+#if !NET8_0_OR_GREATER
+	[InlineData("SHA3-256")]
+#endif
+	public void CreateV8FromNameWithUnsupportedAlgorithm(string algorithmName)
+	{
+		var ex = Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion8FromName(new(algorithmName), GuidHelpers.DnsNamespace, Encoding.ASCII.GetBytes("www.example.com")));
+		Assert.Equal("hashAlgorithmName", ex.ParamName);
+	}
 
 	[Fact]
 	public void CreateV8FromNullName()

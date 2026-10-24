@@ -384,7 +384,8 @@ public static class GuidHelpers
 	/// Creates a Version 8 UUID from a name in the specified namespace using the specified hash algorithm, according to the algorithm
 	/// in <a href="https://www.rfc-editor.org/rfc/rfc9562#name-name-based-uuid-generation">RFC 9562, section 6.5</a>.
 	/// </summary>
-	/// <param name="hashAlgorithmName">The name of the hash algorithm to use. Supported values are <c>SHA256</c>, <c>SHA384</c>, and <c>SHA512</c>.</param>
+	/// <param name="hashAlgorithmName">The name of the hash algorithm to use. Supported values are <c>SHA256</c>, <c>SHA384</c>, and <c>SHA512</c>;
+	/// on .NET 8 and later, <c>SHA3-256</c>, <c>SHA3-384</c>, and <c>SHA3-512</c> are also supported if the platform supports SHA-3.</param>
 	/// <param name="namespaceId">The namespace ID.</param>
 	/// <param name="name">The name within that namespace ID.</param>
 	/// <returns>A version 8 UUID formed by hashing the hash space ID, namespace ID, and name.</returns>
@@ -425,19 +426,27 @@ public static class GuidHelpers
 	/// Creates a Version 8 UUID from a name in the specified namespace using the specified hash algorithm, according to the algorithm
 	/// in <a href="https://www.rfc-editor.org/rfc/rfc9562#name-name-based-uuid-generation">RFC 9562, section 6.5</a>.
 	/// </summary>
-	/// <param name="hashAlgorithmName">The name of the hash algorithm to use. Supported values are <c>SHA256</c>, <c>SHA384</c>, and <c>SHA512</c>.</param>
+	/// <param name="hashAlgorithmName">The name of the hash algorithm to use. Supported values are <c>SHA256</c>, <c>SHA384</c>, and <c>SHA512</c>;
+	/// on .NET 8 and later, <c>SHA3-256</c>, <c>SHA3-384</c>, and <c>SHA3-512</c> are also supported if the platform supports SHA-3.</param>
 	/// <param name="namespaceId">The namespace ID.</param>
 	/// <param name="name">The name within that namespace ID.</param>
 	/// <returns>A version 8 UUID formed by hashing the hash space ID, namespace ID, and name.</returns>
 	[SkipLocalsInit]
 	public static Guid CreateVersion8FromName(HashAlgorithmName hashAlgorithmName, Guid namespaceId, ReadOnlySpan<byte> name)
 	{
-#if NET9_0_OR_GREATER
-		Span<byte> hashOutput = stackalloc byte[64];
-#else
-		using var algorithm = GetHashAlgorithm(hashAlgorithmName);
-		Span<byte> hashOutput = stackalloc byte[algorithm.HashSize / 8];
+		HashData hashData = hashAlgorithmName.Name switch
+		{
+			"SHA256" => SHA256.HashData,
+			"SHA384" => SHA384.HashData,
+			"SHA512" => SHA512.HashData,
+#if NET8_0_OR_GREATER
+			"SHA3-256" => SHA3_256.HashData,
+			"SHA3-384" => SHA3_384.HashData,
+			"SHA3-512" => SHA3_512.HashData,
 #endif
+			_ => throw new ArgumentException($"Unsupported hash algorithm name: {hashAlgorithmName.Name}", nameof(hashAlgorithmName)),
+		};
+
 		Span<byte> buffer = name.Length < 500 ? stackalloc byte[16 + name.Length] : new byte[16 + name.Length];
 
 #if NET8_0_OR_GREATER
@@ -452,16 +461,8 @@ public static class GuidHelpers
 
 		// compute the hash of [ namespace ID, name ]
 		name.CopyTo(buffer[16..]);
-#if NET9_0_OR_GREATER
-		var hashLength = CryptographicOperations.HashData(hashAlgorithmName, buffer, hashOutput);
-		if (hashLength == 0)
-			throw new InvalidOperationException("Failed to hash data");
-		hashOutput = hashOutput[..hashLength];
-#else
-		var success = algorithm.TryComputeHash(buffer, hashOutput, out var bytesWritten);
-		if (!success || bytesWritten != hashOutput.Length)
-			throw new InvalidOperationException("Failed to hash data");
-#endif
+		Span<byte> hashOutput = stackalloc byte[64];
+		hashData(buffer, hashOutput);
 
 		// the initial bytes from the hash are copied straight to the bytes of the new GUID
 		var newGuid = hashOutput[..16];
@@ -480,7 +481,9 @@ public static class GuidHelpers
 	}
 #endif
 
-#if !NET9_0_OR_GREATER
+#if NET6_0_OR_GREATER
+	private delegate int HashData(ReadOnlySpan<byte> source, Span<byte> destination);
+#else
 	private static HashAlgorithm GetHashAlgorithm(HashAlgorithmName hashAlgorithmName) =>
 		hashAlgorithmName.Name switch
 		{
