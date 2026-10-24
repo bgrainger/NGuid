@@ -341,17 +341,17 @@ public static class GuidHelpers
 	}
 
 	/// <summary>
-	/// Creates a Version 8 UUID from 122 bits of the specified input. All byte values will be copied to the returned
-	/// <see cref="Guid"/> except for the reserved <c>version</c> and <c>variant</c> bits, which will be set to 8
-	/// and 2 respectively.
+	/// Creates a Version 8 UUID from the first 16 bytes of the specified input. Those bytes are copied to the returned
+	/// <see cref="Guid"/> except for the reserved <c>version</c> and <c>variant</c> bits, which are set to 8
+	/// and 2 respectively; any additional bytes are ignored.
 	/// </summary>
 	/// <param name="bytes">The bytes to use to initialize the UUID.</param>
 	/// <returns>A new Version 8 UUID.</returns>
-	/// <remarks>This method treats the in MSB order; the first byte in <paramref name="bytes"/>
+	/// <remarks>This method treats the bytes in big-endian (network) order; the first byte in <paramref name="bytes"/>
 	/// will be the first byte in the standard string representation of the returned <see cref="Guid"/>.
-	/// This is the opposite of how the <see cref="Guid(byte[])"/> constructor treats its argument, and
-	/// will cause <see cref="Guid.ToByteArray()"/> to return a byte array whose bytes values are
-	/// "reversed" compared to the input values in <paramref name="bytes"/>.
+	/// This differs from the <see cref="Guid(byte[])"/> constructor, which treats the first three fields as little-endian,
+	/// so <see cref="Guid.ToByteArray()"/> returns each of the first three groups of bytes (4, 2, and 2 bytes) in reverse
+	/// order compared to <paramref name="bytes"/>; the last 8 bytes are unchanged.
 	/// </remarks>
 	public static Guid CreateVersion8(byte[] bytes)
 	{
@@ -368,10 +368,10 @@ public static class GuidHelpers
 		var guidBytes = new byte[16];
 		bytes.AsSpan(0, 16).CopyTo(guidBytes);
 
-		// convert the bytes to network order (so that bytes[0] is the first byte in the serialized GUID output)
+		// convert the bytes from network order to local byte order (so that bytes[0] is the first byte in the serialized GUID output)
 		SwapByteOrder(guidBytes);
 
-		// set the version and variant fields
+		// set the version and variant fields (in local byte order, the version is in byte 7)
 		guidBytes[7] = (byte) (0x80 | (guidBytes[7] & 0xF));
 		guidBytes[8] = (byte) (0x80 | (guidBytes[8] & 0x3F));
 
@@ -381,17 +381,17 @@ public static class GuidHelpers
 
 #if NET6_0_OR_GREATER
 	/// <summary>
-	/// Creates a Version 8 UUID from 122 bits of the specified input. All byte values will be copied to the returned
-	/// <see cref="Guid"/> except for the reserved <c>version</c> and <c>variant</c> bits, which will be set to 8
-	/// and 2 respectively.
+	/// Creates a Version 8 UUID from the first 16 bytes of the specified input. Those bytes are copied to the returned
+	/// <see cref="Guid"/> except for the reserved <c>version</c> and <c>variant</c> bits, which are set to 8
+	/// and 2 respectively; any additional bytes are ignored.
 	/// </summary>
 	/// <param name="bytes">The bytes to use to initialize the UUID.</param>
 	/// <returns>A new Version 8 UUID.</returns>
-	/// <remarks>This method treats the bytes in MSB order; the first byte in <paramref name="bytes"/>
+	/// <remarks>This method treats the bytes in big-endian (network) order; the first byte in <paramref name="bytes"/>
 	/// will be the first byte in the standard string representation of the returned <see cref="Guid"/>.
-	/// This is the opposite of how the <see cref="Guid(byte[])"/> constructor treats its argument, and
-	/// will cause <see cref="Guid.ToByteArray()"/> to return a byte array whose bytes values are
-	/// "reversed" compared to the input values in <paramref name="bytes"/>.
+	/// This differs from the <see cref="Guid(byte[])"/> constructor, which treats the first three fields as little-endian,
+	/// so <see cref="Guid.ToByteArray()"/> returns each of the first three groups of bytes (4, 2, and 2 bytes) in reverse
+	/// order compared to <paramref name="bytes"/>; the last 8 bytes are unchanged.
 	/// </remarks>
 	[SkipLocalsInit]
 	public static Guid CreateVersion8(ReadOnlySpan<byte> bytes)
@@ -410,7 +410,7 @@ public static class GuidHelpers
 #if NET8_0_OR_GREATER
 		return new Guid(guidBytes, bigEndian: true);
 #else
-		// convert the bytes to network order (so that bytes[0] is the first byte in the serialized GUID output)
+		// convert the bytes from network order to local byte order (so that bytes[0] is the first byte in the serialized GUID output)
 		SwapByteOrder(guidBytes);
 		return new Guid(guidBytes);
 #endif
@@ -425,7 +425,7 @@ public static class GuidHelpers
 	/// on .NET 8 and later, <c>SHA3-256</c>, <c>SHA3-384</c>, and <c>SHA3-512</c> are also supported if the platform supports SHA-3.</param>
 	/// <param name="namespaceId">The namespace ID.</param>
 	/// <param name="name">The name within that namespace ID.</param>
-	/// <returns>A version 8 UUID formed by hashing the hash space ID, namespace ID, and name.</returns>
+	/// <returns>A version 8 UUID formed by hashing the namespace ID and name.</returns>
 	public static Guid CreateVersion8FromName(HashAlgorithmName hashAlgorithmName, Guid namespaceId, byte[] name)
 	{
 #if NET6_0_OR_GREATER
@@ -467,7 +467,7 @@ public static class GuidHelpers
 	/// on .NET 8 and later, <c>SHA3-256</c>, <c>SHA3-384</c>, and <c>SHA3-512</c> are also supported if the platform supports SHA-3.</param>
 	/// <param name="namespaceId">The namespace ID.</param>
 	/// <param name="name">The name within that namespace ID.</param>
-	/// <returns>A version 8 UUID formed by hashing the hash space ID, namespace ID, and name.</returns>
+	/// <returns>A version 8 UUID formed by hashing the namespace ID and name.</returns>
 	[SkipLocalsInit]
 	public static Guid CreateVersion8FromName(HashAlgorithmName hashAlgorithmName, Guid namespaceId, ReadOnlySpan<byte> name)
 	{
@@ -490,7 +490,7 @@ public static class GuidHelpers
 		if (!namespaceId.TryWriteBytes(buffer, bigEndian: true, out _))
 			throw new InvalidOperationException("Failed to write namespace ID bytes to buffer");
 #else
-		// convert the hash space and namespace UUIDs to network order
+		// convert the namespace UUID to network order
 		if (!namespaceId.TryWriteBytes(buffer))
 			throw new InvalidOperationException("Failed to write namespace ID bytes to buffer");
 		SwapByteOrder(buffer);
