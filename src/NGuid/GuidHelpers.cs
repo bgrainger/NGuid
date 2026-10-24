@@ -538,18 +538,12 @@ public static class GuidHelpers
 	// Converts a GUID (expressed as a byte array) to/from network order (MSB-first).
 	internal static void SwapByteOrder(Span<byte> guid)
 	{
-		SwapBytes(guid, 0, 3);
-		SwapBytes(guid, 1, 2);
-		SwapBytes(guid, 4, 5);
-		SwapBytes(guid, 6, 7);
+		(guid[0], guid[3]) = (guid[3], guid[0]);
+		(guid[1], guid[2]) = (guid[2], guid[1]);
+		(guid[4], guid[5]) = (guid[5], guid[4]);
+		(guid[6], guid[7]) = (guid[7], guid[6]);
 	}
 #endif
-
-	private static void SwapBytes(Span<byte> guid, int left, int right)
-	{
-		ref var first = ref Unsafe.AsRef(in guid[0]);
-		(Unsafe.Add(ref first, right), Unsafe.Add(ref first, left)) = (Unsafe.Add(ref first, left), Unsafe.Add(ref first, right));
-	}
 
 	// UUID v1 and v6 uses a count of 100-nanosecond intervals since 00:00:00.00 UTC, 15 October 1582
 	private static readonly DateTime s_gregorianEpoch = new(1582, 10, 15, 0, 0, 0, DateTimeKind.Utc);
