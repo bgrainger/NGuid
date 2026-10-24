@@ -221,8 +221,8 @@ public static class GuidHelpers
 		var guidBytes = guid.ToByteArray();
 #endif
 
-		// check that the GUID is a version 1 GUID
-		if ((guidBytes[7] & 0xF0) != 0x10)
+		// check that the GUID is a version 1 GUID with the RFC 9562 variant
+		if ((guidBytes[7] & 0xF0) != 0x10 || (guidBytes[8] & 0xC0) != 0x80)
 			throw new ArgumentException("The GUID must be a version 1 GUID.", nameof(guid));
 
 		// turn the bytes into a 60-bit timestamp; note that the bytes retrieved from the GUID are in LSB order

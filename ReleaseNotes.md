@@ -6,6 +6,7 @@
 * Update `System.Memory` dependency to 4.6.3.
 * `CreateVersion8FromName` supports SHA-3 on .NET 8 (previously .NET 9+ only) and no longer accepts MD5 or SHA-1 on .NET 9+.
 * `CreateVersion6` sets the multicast bit in its random node ID, as required by RFC 9562.
+* `CreateVersion6FromVersion1` rejects GUIDs that don't have the RFC 9562 variant.
 
 ## 1.0.0
 

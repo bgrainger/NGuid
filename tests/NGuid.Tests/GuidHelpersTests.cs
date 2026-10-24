@@ -140,6 +140,13 @@ public class GuidHelpersTests
 		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion6FromVersion1(Guid.NewGuid()));
 
 	[Theory]
+	[InlineData("6ba7b810-9dad-11d1-00b4-00c04fd430c8")] // NCS variant
+	[InlineData("6ba7b810-9dad-11d1-c0b4-00c04fd430c8")] // Microsoft variant
+	[InlineData("6ba7b810-9dad-11d1-e0b4-00c04fd430c8")] // reserved variant
+	public void ConvertNonRfcVariantV1ToV6(string input) =>
+		Assert.Throws<ArgumentException>(() => GuidHelpers.CreateVersion6FromVersion1(new Guid(input)));
+
+	[Theory]
 	[InlineData("00112233445566778899AABBCCDDEEFF", "00112233-4455-8677-8899-aabbccddeeff")]
 	[InlineData("112233445566778899AABBCCDDEEFF00", "11223344-5566-8788-99aa-bbccddeeff00")]
 	[InlineData("00000000000000000000000000000000", "00000000-0000-8000-8000-000000000000")]
