@@ -14,7 +14,7 @@ public static class GuidHelpers
 	/// </summary>
 	/// <param name="namespaceId">The ID of the namespace.</param>
 	/// <param name="name">The name (within that namespace). This string will be converted to UTF-8
-	/// bytes then hashed to create the UUID.</param>
+	/// bytes then hashed to create the UUID. It must not contain unpaired surrogates.</param>
 	/// <param name="version">The version number of the UUID to create; this value must be either
 	/// 3 (for MD5 hashing) or 5 (for SHA-1 hashing).</param>
 	/// <returns>A UUID derived from the namespace and name.</returns>
@@ -32,14 +32,26 @@ public static class GuidHelpers
 
 		// convert the name to a sequence of octets (as defined by the standard or conventions of its namespace) (step 3)
 		// ASSUME: UTF-8 encoding is always appropriate
+		// (invalid UTF-16 is rejected rather than replaced with U+FFFD so that different names can't produce the same UUID)
 #if NET6_0_OR_GREATER
 		Span<byte> nameBytes = name.Length < 500 ? stackalloc byte[name.Length * 3] : new byte[name.Length * 3];
-		nameBytes = nameBytes[..Encoding.UTF8.GetBytes(name.AsSpan(), nameBytes)];
-		return CreateFromName(namespaceId, nameBytes, version);
+		try
+		{
+			nameBytes = nameBytes[..s_strictUtf8.GetBytes(name.AsSpan(), nameBytes)];
+		}
 #else
-		var nameBytes = Encoding.UTF8.GetBytes(name);
-		return CreateFromName(namespaceId, nameBytes, version);
+		byte[] nameBytes;
+		try
+		{
+			nameBytes = s_strictUtf8.GetBytes(name);
+		}
 #endif
+		catch (EncoderFallbackException ex)
+		{
+			throw new ArgumentException("The name cannot be converted to UTF-8.", nameof(name), ex);
+		}
+
+		return CreateFromName(namespaceId, nameBytes, version);
 	}
 
 	/// <summary>
@@ -532,4 +544,7 @@ public static class GuidHelpers
 
 	// UUID v1 and v6 uses a count of 100-nanosecond intervals since 00:00:00.00 UTC, 15 October 1582
 	private static readonly DateTime s_gregorianEpoch = new(1582, 10, 15, 0, 0, 0, DateTimeKind.Utc);
+
+	// throws EncoderFallbackException for invalid UTF-16 instead of substituting U+FFFD
+	private static readonly UTF8Encoding s_strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 }

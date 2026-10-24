@@ -50,6 +50,21 @@ public class GuidHelpersTests
 	}
 
 	[Fact]
+	public void CreateFromNameWithSurrogatePair() =>
+		Assert.Equal(new Guid("52096f1e-2b44-5520-929f-9e587f0f4899"), GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "\U0001F600"));
+
+	[Fact]
+	public void CreateFromNameWithUnpairedSurrogate()
+	{
+		foreach (var name in new[] { "\uD800", "a\uDFFFb", "\uDC00\uD800" })
+		{
+			var ex = Assert.Throws<ArgumentException>(() => GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, name));
+			Assert.Equal("name", ex.ParamName);
+			Assert.IsType<EncoderFallbackException>(ex.InnerException);
+		}
+	}
+
+	[Fact]
 	public void CreateInvalidVersion()
 	{
 		var ex = Assert.Throws<ArgumentOutOfRangeException>(() => GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, "www.example.com", 4));
