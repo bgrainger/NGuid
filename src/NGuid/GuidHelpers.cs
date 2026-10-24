@@ -87,10 +87,14 @@ public static class GuidHelpers
 		// compute the hash of the namespace ID concatenated with the name (step 4)
 #pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms
 #pragma warning disable CA5351 // Do Not Use Broken Cryptographic Algorithms
-		var data = namespaceBytes.Concat(name).ToArray();
 		byte[] hash;
 		using (var algorithm = version == 3 ? (HashAlgorithm) MD5.Create() : SHA1.Create())
-			hash = algorithm.ComputeHash(data);
+		{
+			algorithm.TransformBlock(namespaceBytes, 0, namespaceBytes.Length, null, 0);
+			algorithm.TransformBlock(name, 0, name.Length, null, 0);
+			algorithm.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+			hash = algorithm.Hash;
+		}
 #pragma warning restore CA5351 // Do Not Use Broken Cryptographic Algorithms
 #pragma warning restore CA5350 // Do Not Use Weak Cryptographic Algorithms
 
@@ -231,8 +235,7 @@ public static class GuidHelpers
 		RandomNumberGenerator.Fill(bytes);
 #else
 		var bytes = new byte[8];
-		using var rng = RandomNumberGenerator.Create();
-		rng.GetBytes(bytes);
+		s_rng.GetBytes(bytes);
 #endif
 
 		// "implementations MUST set the least significant bit of the first octet of the Node ID to 1" (RFC 9562 section 6.10)
@@ -335,8 +338,7 @@ public static class GuidHelpers
 		RandomNumberGenerator.Fill(bytes);
 #else
 		var bytes = new byte[10];
-		using var rng = RandomNumberGenerator.Create();
-		rng.GetBytes(bytes);
+		s_rng.GetBytes(bytes);
 #endif
 
 		var randA = (ushort) (0x7000u | ((bytes[0] & 0xF) << 8) | bytes[1]);
@@ -451,8 +453,9 @@ public static class GuidHelpers
 		SwapByteOrder(namespaceBytes);
 		algorithm.TransformBlock(namespaceBytes, 0, namespaceBytes.Length, null, 0);
 
-		// add the name to the hash
-		algorithm.TransformFinalBlock(name, 0, name.Length);
+		// add the name to the hash (TransformFinalBlock would return an unneeded copy of the name)
+		algorithm.TransformBlock(name, 0, name.Length, null, 0);
+		algorithm.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 
 		// the initial bytes from the hash are copied straight to the bytes of the new GUID
 		var newGuid = new byte[16];
@@ -582,4 +585,9 @@ public static class GuidHelpers
 
 	// throws EncoderFallbackException for invalid UTF-16 instead of substituting U+FFFD
 	private static readonly UTF8Encoding s_strictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+#if !NET6_0_OR_GREATER
+	// thread-safe; creating a new instance for every UUID is slow on .NET Framework
+	private static readonly RandomNumberGenerator s_rng = RandomNumberGenerator.Create();
+#endif
 }

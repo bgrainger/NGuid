@@ -49,6 +49,14 @@ public class GuidHelpersTests
 	}
 
 	[Fact]
+	public void CreateGuidFromEmptyName()
+	{
+		Assert.Equal(new Guid("c87ee674-4ddc-3efe-a74e-dfe25da5d7b3"), GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, Array.Empty<byte>(), 3));
+		Assert.Equal(new Guid("4ebd0208-8328-5d69-8c44-ec50939c0967"), GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, Array.Empty<byte>(), 5));
+		Assert.Equal(new Guid("4ebc3bf9-4458-8d83-baae-f9d9dc2ad979"), GuidHelpers.CreateVersion8FromName(HashAlgorithmName.SHA256, GuidHelpers.DnsNamespace, Array.Empty<byte>()));
+	}
+
+	[Fact]
 	public void CreateNullName()
 	{
 		var ex = Assert.Throws<ArgumentNullException>(() => GuidHelpers.CreateFromName(GuidHelpers.DnsNamespace, default(string)!));
