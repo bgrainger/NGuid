@@ -6,19 +6,6 @@ namespace NGuid.Tests;
 
 public class GuidHelpersTests
 {
-#if !NET8_0_OR_GREATER
-	[Fact]
-	public void SwapByteOrder()
-	{
-		var guid = new Guid(0x01020304, 0x0506, 0x0708, 9, 10, 11, 12, 13, 14, 15, 16);
-		var bytes = guid.ToByteArray();
-		Assert.Equal([4, 3, 2, 1, 6, 5, 8, 7, 9, 10, 11, 12, 13, 14, 15, 16], bytes);
-
-		GuidHelpers.SwapByteOrder(bytes);
-		Assert.Equal([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], bytes);
-	}
-#endif
-
 	[Theory]
 	[InlineData("www.widgets.com", 3, "3d813cbb-47fb-32ba-91df-831e1593ac29")] // RFC 4122 Appendix B, as updated by http://www.rfc-editor.org/errata_search.php?rfc=4122
 	[InlineData("www.widgets.com", 5, "21f7f8de-8051-5b89-8680-0195ef798b6a")] // Boost Test Suite https://github.com/boostorg/uuid/blob/2bc0c8e71677f387afdc09bc4f8d609d2c74e80e/test/test_generators.cpp#L85C25-L85C121

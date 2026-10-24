@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -81,8 +82,8 @@ public static class GuidHelpers
 		ValidateVersion(version);
 
 		// convert the namespace UUID to network order (step 3)
-		var namespaceBytes = namespaceId.ToByteArray();
-		SwapByteOrder(namespaceBytes);
+		var namespaceBytes = new byte[16];
+		WriteBigEndian(namespaceId, namespaceBytes);
 
 		// compute the hash of the namespace ID concatenated with the name (step 4)
 #pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms
@@ -98,19 +99,8 @@ public static class GuidHelpers
 #pragma warning restore CA5351 // Do Not Use Broken Cryptographic Algorithms
 #pragma warning restore CA5350 // Do Not Use Weak Cryptographic Algorithms
 
-		// most bytes from the hash are copied straight to the bytes of the new GUID (steps 5-7, 9, 11-12)
-		var newGuid = new byte[16];
-		Array.Copy(hash, 0, newGuid, 0, 16);
-
-		// set the four most significant bits (bits 12 through 15) of the time_hi_and_version field to the appropriate 4-bit version number from Section 4.1.3 (step 8)
-		newGuid[6] = (byte) ((newGuid[6] & 0x0F) | (version << 4));
-
-		// set the two most significant bits (bits 6 and 7) of the clock_seq_hi_and_reserved to zero and one, respectively (step 10)
-		newGuid[8] = (byte) ((newGuid[8] & 0x3F) | 0x80);
-
-		// convert the resulting UUID to local byte order (step 13)
-		SwapByteOrder(newGuid);
-		return new Guid(newGuid);
+		// copy the first 16 bytes of the hash to the new GUID, setting the version (step 8) and variant (step 10) bits (steps 5-13)
+		return CreateGuid(hash, version);
 #endif
 	}
 
@@ -144,14 +134,7 @@ public static class GuidHelpers
 	private static Guid CreateFromNameBuffer(Guid namespaceId, Span<byte> buffer, int version)
 	{
 		// convert the namespace UUID to network order (step 3)
-#if NET8_0_OR_GREATER
-		if (!namespaceId.TryWriteBytes(buffer, bigEndian: true, out _))
-			throw new InvalidOperationException("Failed to write namespace ID bytes to buffer");
-#else
-		if (!namespaceId.TryWriteBytes(buffer))
-			throw new InvalidOperationException("Failed to write Guid bytes to buffer");
-		SwapByteOrder(buffer);
-#endif
+		WriteBigEndian(namespaceId, buffer);
 
 		// compute the hash of the namespace ID concatenated with the name (step 4)
 #pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms
@@ -164,22 +147,8 @@ public static class GuidHelpers
 #pragma warning restore CA5351 // Do Not Use Broken Cryptographic Algorithms
 #pragma warning restore CA5350 // Do Not Use Weak Cryptographic Algorithms
 
-		// most bytes from the hash are copied straight to the bytes of the new GUID (steps 5-7, 9, 11-12)
-		var newGuid = buffer[^20..^4];
-
-		// set the four most significant bits (bits 12 through 15) of the time_hi_and_version field to the appropriate 4-bit version number from Section 4.1.3 (step 8)
-		newGuid[6] = (byte) ((newGuid[6] & 0x0F) | (version << 4));
-
-		// set the two most significant bits (bits 6 and 7) of the clock_seq_hi_and_reserved to zero and one, respectively (step 10)
-		newGuid[8] = (byte) ((newGuid[8] & 0x3F) | 0x80);
-
-#if NET8_0_OR_GREATER
-		return new Guid(newGuid, bigEndian: true);
-#else
-		// convert the resulting UUID to local byte order (step 13)
-		SwapByteOrder(newGuid);
-		return new Guid(newGuid);
-#endif
+		// copy the first 16 bytes of the hash to the new GUID, setting the version (step 8) and variant (step 10) bits (steps 5-13)
+		return CreateGuid(buffer[^20..], version);
 	}
 #endif
 
@@ -365,26 +334,11 @@ public static class GuidHelpers
 	{
 #if NET6_0_OR_GREATER
 		ArgumentNullException.ThrowIfNull(bytes);
-		return CreateVersion8(bytes.AsSpan());
 #else
 		if (bytes is null)
 			throw new ArgumentNullException(nameof(bytes));
-		if (bytes.Length < 16)
-			throw new ArgumentException("At least sixteen bytes must be provided", nameof(bytes));
-
-		// make a copy of the bytes
-		var guidBytes = new byte[16];
-		bytes.AsSpan(0, 16).CopyTo(guidBytes);
-
-		// convert the bytes from network order to local byte order (so that bytes[0] is the first byte in the serialized GUID output)
-		SwapByteOrder(guidBytes);
-
-		// set the version and variant fields (in local byte order, the version is in byte 7)
-		guidBytes[7] = (byte) (0x80 | (guidBytes[7] & 0xF));
-		guidBytes[8] = (byte) (0x80 | (guidBytes[8] & 0x3F));
-
-		return new Guid(guidBytes);
 #endif
+		return CreateVersion8(bytes.AsSpan());
 	}
 
 	/// <summary>
@@ -400,33 +354,12 @@ public static class GuidHelpers
 	/// so <see cref="Guid.ToByteArray()"/> returns each of the first three groups of bytes (4, 2, and 2 bytes) in reverse
 	/// order compared to <paramref name="bytes"/>; the last 8 bytes are unchanged.
 	/// </remarks>
-#if NET6_0_OR_GREATER
-	[SkipLocalsInit]
-#endif
 	public static Guid CreateVersion8(ReadOnlySpan<byte> bytes)
 	{
 		if (bytes.Length < 16)
 			throw new ArgumentException("At least sixteen bytes must be provided", nameof(bytes));
 
-#if NET6_0_OR_GREATER
-		// make a copy of the bytes
-		Span<byte> guidBytes = stackalloc byte[16];
-		bytes[..16].CopyTo(guidBytes);
-
-		// set the version and variant fields
-		guidBytes[6] = (byte) (0x80 | (guidBytes[6] & 0xF));
-		guidBytes[8] = (byte) (0x80 | (guidBytes[8] & 0x3F));
-
-#if NET8_0_OR_GREATER
-		return new Guid(guidBytes, bigEndian: true);
-#else
-		// convert the bytes from network order to local byte order (so that bytes[0] is the first byte in the serialized GUID output)
-		SwapByteOrder(guidBytes);
-		return new Guid(guidBytes);
-#endif
-#else
-		return CreateVersion8(bytes.Slice(0, 16).ToArray());
-#endif
+		return CreateGuid(bytes, 8);
 	}
 
 	/// <summary>
@@ -449,25 +382,16 @@ public static class GuidHelpers
 		using var algorithm = GetHashAlgorithm(hashAlgorithmName);
 
 		// add the namespace bytes (in network order) to the hash
-		var namespaceBytes = namespaceId.ToByteArray();
-		SwapByteOrder(namespaceBytes);
+		var namespaceBytes = new byte[16];
+		WriteBigEndian(namespaceId, namespaceBytes);
 		algorithm.TransformBlock(namespaceBytes, 0, namespaceBytes.Length, null, 0);
 
 		// add the name to the hash (TransformFinalBlock would return an unneeded copy of the name)
 		algorithm.TransformBlock(name, 0, name.Length, null, 0);
 		algorithm.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
 
-		// the initial bytes from the hash are copied straight to the bytes of the new GUID
-		var newGuid = new byte[16];
-		Array.Copy(algorithm.Hash, newGuid, 16);
-
-		// set the version and variant bits
-		newGuid[6] = (byte) ((newGuid[6] & 0x0F) | 0x80);
-		newGuid[8] = (byte) ((newGuid[8] & 0x3F) | 0x80);
-
-		// convert the resulting UUID to local byte order
-		SwapByteOrder(newGuid);
-		return new Guid(newGuid);
+		// the initial bytes from the hash are copied straight to the bytes of the new GUID, with the version and variant bits set
+		return CreateGuid(algorithm.Hash, 8);
 #endif
 	}
 
@@ -499,37 +423,15 @@ public static class GuidHelpers
 			_ => throw new ArgumentException($"Unsupported hash algorithm name: {hashAlgorithmName.Name}", nameof(hashAlgorithmName)),
 		};
 
+		// compute the hash of [ namespace ID (in network order), name ]
 		Span<byte> buffer = name.Length < 500 ? stackalloc byte[16 + name.Length] : new byte[16 + name.Length];
-
-#if NET8_0_OR_GREATER
-		if (!namespaceId.TryWriteBytes(buffer, bigEndian: true, out _))
-			throw new InvalidOperationException("Failed to write namespace ID bytes to buffer");
-#else
-		// convert the namespace UUID to network order
-		if (!namespaceId.TryWriteBytes(buffer))
-			throw new InvalidOperationException("Failed to write namespace ID bytes to buffer");
-		SwapByteOrder(buffer);
-#endif
-
-		// compute the hash of [ namespace ID, name ]
+		WriteBigEndian(namespaceId, buffer);
 		name.CopyTo(buffer[16..]);
 		Span<byte> hashOutput = stackalloc byte[64];
 		hashData(buffer, hashOutput);
 
-		// the initial bytes from the hash are copied straight to the bytes of the new GUID
-		var newGuid = hashOutput[..16];
-
-		// set the version and variant bits
-		newGuid[6] = (byte) ((newGuid[6] & 0x0F) | 0x80);
-		newGuid[8] = (byte) ((newGuid[8] & 0x3F) | 0x80);
-
-#if NET8_0_OR_GREATER
-		return new Guid(newGuid, bigEndian: true);
-#else
-		// convert the resulting UUID to local byte order
-		SwapByteOrder(newGuid);
-		return new Guid(newGuid);
-#endif
+		// the initial bytes from the hash are copied straight to the bytes of the new GUID, with the version and variant bits set
+		return CreateGuid(hashOutput, 8);
 #else
 		return CreateVersion8FromName(hashAlgorithmName, namespaceId, name.ToArray());
 #endif
@@ -574,16 +476,31 @@ public static class GuidHelpers
 			throw new ArgumentOutOfRangeException(nameof(version), version, "version must be either 3 or 5.");
 	}
 
-#if !NET8_0_OR_GREATER
-	// Converts a GUID (expressed as a byte array) to/from network order (MSB-first).
-	internal static void SwapByteOrder(Span<byte> guid)
+	// Creates a GUID from the first 16 bytes of 'bytes' (in network order, i.e., MSB-first), setting the version and variant bits.
+	private static Guid CreateGuid(ReadOnlySpan<byte> bytes, int version) =>
+		new(BinaryPrimitives.ReadUInt32BigEndian(bytes),
+			BinaryPrimitives.ReadUInt16BigEndian(bytes.Slice(4)),
+			(ushort) ((BinaryPrimitives.ReadUInt16BigEndian(bytes.Slice(6)) & 0x0FFF) | (version << 12)),
+			(byte) ((bytes[8] & 0x3F) | 0x80), bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
+
+	// Writes the 16 bytes of 'guid' to the start of 'destination' in network order (MSB-first).
+	private static void WriteBigEndian(Guid guid, Span<byte> destination)
 	{
-		(guid[0], guid[3]) = (guid[3], guid[0]);
-		(guid[1], guid[2]) = (guid[2], guid[1]);
-		(guid[4], guid[5]) = (guid[5], guid[4]);
-		(guid[6], guid[7]) = (guid[7], guid[6]);
-	}
+#if NET8_0_OR_GREATER
+		guid.TryWriteBytes(destination, bigEndian: true, out _);
+#else
+#if NET6_0_OR_GREATER
+		guid.TryWriteBytes(destination);
+#else
+		guid.ToByteArray().AsSpan().CopyTo(destination);
 #endif
+
+		// the first three fields are stored in little-endian order
+		destination.Slice(0, 4).Reverse();
+		destination.Slice(4, 2).Reverse();
+		destination.Slice(6, 2).Reverse();
+#endif
+	}
 
 	// UUID v1 and v6 uses a count of 100-nanosecond intervals since 00:00:00.00 UTC, 15 October 1582
 	private static readonly DateTime s_gregorianEpoch = new(1582, 10, 15, 0, 0, 0, DateTimeKind.Utc);
