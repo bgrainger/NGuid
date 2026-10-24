@@ -154,7 +154,7 @@ public static class GuidHelpers
 	/// </summary>
 	/// <returns>A new Version 6 UUID based on the current time and a random node ID.</returns>
 	public static Guid CreateVersion6() =>
-		CreateVersion6(DateTimeOffset.UtcNow);
+		CreateVersion6(DateTimeOffset.UtcNow, paramName: null);
 
 #if NET8_0_OR_GREATER
 	/// <summary>
@@ -165,7 +165,7 @@ public static class GuidHelpers
 	public static Guid CreateVersion6(TimeProvider timeProvider)
 	{
 		ArgumentNullException.ThrowIfNull(timeProvider);
-		return CreateVersion6(timeProvider.GetUtcNow());
+		return CreateVersion6(timeProvider.GetUtcNow(), nameof(timeProvider));
 	}
 #endif
 
@@ -173,15 +173,17 @@ public static class GuidHelpers
 	/// Creates a new Version 6 UUID from the specified timestamp.
 	/// </summary>
 	/// <param name="timestamp">The timestamp to be used to fill the <c>time_high</c>, <c>time_mid</c>, and <c>time_low</c> fields of the UUID.</param>
+	/// <param name="paramName">The name of the public method's parameter that supplied <paramref name="timestamp"/>, if any.</param>
 	/// <returns>A new time-based Version 6 UUID.</returns>
 #if NET6_0_OR_GREATER
 	[SkipLocalsInit]
 #endif
-	private static Guid CreateVersion6(DateTimeOffset timestamp)
+	private static Guid CreateVersion6(DateTimeOffset timestamp, string? paramName)
 	{
+		// UUID v1 and v6 use a 60-bit timestamp
 		var ticks = (timestamp.UtcDateTime - s_gregorianEpoch).Ticks;
-		if (ticks < 0)
-			throw new ArgumentOutOfRangeException(nameof(timestamp), timestamp, "The timestamp must be after 15 October 1582.");
+		if (ticks is < 0 or >= 1L << 60)
+			throw new ArgumentOutOfRangeException(paramName, timestamp, "The timestamp must be between 15 October 1582 and 31 March 5236.");
 
 		// use the timestamp as the first three fields in the UUID
 		var timeHigh = (uint) (ticks >> 28);
@@ -254,7 +256,7 @@ public static class GuidHelpers
 	/// </summary>
 	/// <returns>A new Version 7 UUID based on the current time and random data.</returns>
 	public static Guid CreateVersion7() =>
-		CreateVersion7(DateTimeOffset.UtcNow);
+		CreateVersion7(DateTimeOffset.UtcNow, paramName: null);
 
 #if NET8_0_OR_GREATER
 	/// <summary>
@@ -265,7 +267,7 @@ public static class GuidHelpers
 	public static Guid CreateVersion7(TimeProvider timeProvider)
 	{
 		ArgumentNullException.ThrowIfNull(timeProvider);
-		return CreateVersion7(timeProvider.GetUtcNow());
+		return CreateVersion7(timeProvider.GetUtcNow(), nameof(timeProvider));
 	}
 #endif
 
@@ -273,15 +275,16 @@ public static class GuidHelpers
 	/// Creates a new Version 7 UUID from the specified timestamp.
 	/// </summary>
 	/// <param name="timestamp">The timestamp to be used to fill the <c>unix_ts_ms</c> field of the UUID.</param>
+	/// <param name="paramName">The name of the public method's parameter that supplied <paramref name="timestamp"/>, if any.</param>
 	/// <returns>A new time-based Version 7 UUID.</returns>
 #if NET6_0_OR_GREATER
 	[SkipLocalsInit]
 #endif
-	private static Guid CreateVersion7(DateTimeOffset timestamp)
+	private static Guid CreateVersion7(DateTimeOffset timestamp, string? paramName)
 	{
 		var unixMilliseconds = timestamp.ToUnixTimeMilliseconds();
 		if (unixMilliseconds < 0)
-			throw new ArgumentOutOfRangeException(nameof(timestamp), timestamp, "The timestamp must be after 1 January 1970.");
+			throw new ArgumentOutOfRangeException(paramName, timestamp, "The timestamp must be after 1 January 1970.");
 
 		// "UUIDv7 values are created by allocating a Unix timestamp in milliseconds in the most significant 48 bits ..."
 		var timeHigh = (uint) (unixMilliseconds >> 16);

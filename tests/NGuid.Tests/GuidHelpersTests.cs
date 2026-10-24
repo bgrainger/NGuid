@@ -104,6 +104,24 @@ public class GuidHelpersTests
 		var guid = GuidHelpers.CreateVersion6(timeProvider);
 		Assert.StartsWith(expectedPrefix, guid.ToString("d"), StringComparison.Ordinal);
 	}
+
+	[Fact]
+	public void CreateV6FromLastValidTimestamp()
+	{
+		// the last timestamp that fits in 60 bits
+		var timeProvider = new FixedTimeProvider(s_gregorianEpoch.AddTicks((1L << 60) - 1));
+		Assert.StartsWith("ffffffff-ffff-6fff-", GuidHelpers.CreateVersion6(timeProvider).ToString("d"), StringComparison.Ordinal);
+	}
+
+	[Theory]
+	[InlineData(-1L)]
+	[InlineData(1L << 60)]
+	public void CreateV6FromOutOfRangeTimestamp(long ticksSinceGregorianEpoch)
+	{
+		var timeProvider = new FixedTimeProvider(s_gregorianEpoch.AddTicks(ticksSinceGregorianEpoch));
+		var ex = Assert.Throws<ArgumentOutOfRangeException>(() => GuidHelpers.CreateVersion6(timeProvider));
+		Assert.Equal("timeProvider", ex.ParamName);
+	}
 #endif
 
 	[Fact]
@@ -128,6 +146,14 @@ public class GuidHelpersTests
 		var timeProvider = new FixedTimeProvider(DateTimeOffset.Parse(timestamp, System.Globalization.CultureInfo.InvariantCulture));
 		var guid = GuidHelpers.CreateVersion7(timeProvider);
 		Assert.StartsWith(expectedPrefix, guid.ToString("d"), StringComparison.Ordinal);
+	}
+
+	[Fact]
+	public void CreateV7FromTimestampBeforeUnixEpoch()
+	{
+		var timeProvider = new FixedTimeProvider(DateTimeOffset.UnixEpoch.AddMilliseconds(-1));
+		var ex = Assert.Throws<ArgumentOutOfRangeException>(() => GuidHelpers.CreateVersion7(timeProvider));
+		Assert.Equal("timeProvider", ex.ParamName);
 	}
 #endif
 
@@ -248,6 +274,8 @@ public class GuidHelpersTests
 	}
 
 #if NET8_0_OR_GREATER
+	private static readonly DateTimeOffset s_gregorianEpoch = new(1582, 10, 15, 0, 0, 0, TimeSpan.Zero);
+
 	private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
 	{
 		public override DateTimeOffset GetUtcNow() => utcNow;
