@@ -11,6 +11,7 @@
 * `CreateFromName` throws `ArgumentException` for a `string` name with unpaired surrogates instead of replacing them with U+FFFD.
 * The `ReadOnlySpan<byte>` overloads of `CreateFromName`, `CreateVersion8`, and `CreateVersion8FromName` are available on .NET Standard 2.0.
 * Add `GuidHelpers.X500Namespace`.
+* Mark the .NET 8+ assemblies as trimmable and Native AOT compatible.
 
 ## 1.0.0
 

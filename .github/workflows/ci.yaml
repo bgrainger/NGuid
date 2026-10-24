@@ -69,3 +69,34 @@ jobs:
         name: nuget
         path: artifacts/package/release/
         if-no-files-found: error
+
+  native-aot:
+    strategy:
+      fail-fast: false
+      matrix:
+        tfm: [ net8.0, net10.0 ]
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out
+      uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+
+    - name: Set up .NET
+      uses: actions/setup-dotnet@v6
+      with:
+        global-json-file: global.json
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v6
+      with:
+        path: ~/.nuget/packages
+        key: nuget-aot-${{ hashFiles('Directory.Packages.props', '**/*.csproj') }}
+        restore-keys: nuget-aot-
+
+    - name: Publish
+      run: dotnet publish tests/NGuid.NativeAot.Tests --configuration Release --runtime linux-x64 --framework ${{ matrix.tfm }}
+
+    - name: Test Native AOT
+      run: ./artifacts/publish/NGuid.NativeAot.Tests/release_${{ matrix.tfm }}_linux-x64/NGuid.NativeAot.Tests
